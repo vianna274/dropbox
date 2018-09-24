@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 
+#include "constants.hpp"
+
 using namespace std;
 
 namespace Dropbox {
@@ -13,7 +15,7 @@ class Packet
 {
   public:
     Packet(string message);
-    string getIndexMessage(int index);
+    Message * getIndexMessage(int index);
     string getMessage();
     int getSize();
 

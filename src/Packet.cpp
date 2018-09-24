@@ -13,7 +13,7 @@ int Packet::getSize() {
 
 vector<Message> Packet::splitMessage(string message) {
   size_t len = message.length();
-  double splitLength = 256; // should be a constant
+  double splitLength = MESSAGE_LEN;
   size_t numOfMessages = ceil(len/splitLength);
   vector<Message> messages;
   int gap = 0;
@@ -23,7 +23,8 @@ vector<Message> Packet::splitMessage(string message) {
     if ((i * splitLength) >= len) {
       splitLength = len;
     }
-    Message newMessage(message.substr(i * splitLength, splitLength), (i+1));
+    Message newMessage(message.substr(i * splitLength,
+      splitLength), (i+1), numOfMessages);
 
     if (gap > 0)
       newMessage.fillWithZeros(gap);
@@ -32,10 +33,10 @@ vector<Message> Packet::splitMessage(string message) {
   return messages;
 }
 
-string Packet::getIndexMessage(int index) {
+Message * Packet::getIndexMessage(int index) {
   if (index >= this->getSize()) {
     fprintf(stderr, "Error trying to getIndexMessage");
     return NULL;
   }
-  return this->messages[index].getMessage();
+  return &this->messages[index];
 }

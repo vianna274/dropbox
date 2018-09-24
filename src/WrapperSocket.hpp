@@ -5,7 +5,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <string.h>
 
+#include "constants.hpp"
 #include "Packet.hpp"
 
 using namespace std;
@@ -17,10 +19,13 @@ class WrapperSocket
   public:
     WrapperSocket(string host, int port);
     void send(Packet packet);
+    void bindSocket(int port);
+    void receive();
   private:
     int sockfd;
     hostent * server;
-    sockaddr_in serv_addr;
+    sockaddr_in serverAddr, clientAddr;
+    socklen_t client;
 
 };
 
