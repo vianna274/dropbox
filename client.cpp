@@ -9,7 +9,6 @@
 #include <string.h>
 #include <iostream>
 #include <boost/algorithm/string.hpp>
-#include <boost/regex.hpp>
 #include "src/WrapperSocket.hpp"
 #include "src/Packet.hpp"
 #include "src/constants.hpp"
@@ -18,43 +17,6 @@
 #define PORT 4000
 
 using namespace std;
-
-Client::Client (string username, Dropbox::WrapperSocket socket) : username(username), socket(socket){
-	cout << "creating user for " << username << "\n";
-}
-void Client::upload(string filePath){
-	cout << "uploading : " << filePath << "\n";
-}
-void Client::uploadAll(string filePath){
-	cout << "uploading ALL : " << filePath << "\n";
-}
-void Client::download(string filePath){
-	cout << "downloading : " << filePath << "\n";
-}
-void Client::downloadAll(string filePath){
-	cout << "downloading ALL : " << filePath << "\n";
-}
-void Client::updateAll(string filePath){
-	cout << "updating ALL : " << filePath << "\n";
-}
-void Client::del(string filePath){
-	cout << "deleting : " << filePath << "\n";
-}
-void Client::list_server(){
-	cout << "listing servers " << "\n";
-}
-void Client::list_client(){
-	cout << "listing clients" << "\n";
-}
-void Client::get_sync_dir(){
-	cout << "getting sync dir" << "\n";
-}
-void Client::exit(){
-	cout << "exiting" << "\n";
-}
-void Client::triggerNotifications(){
-	cout << "Triggering notifications" << "\n";
-}
 
 vector<string> getArguments(){
 	string input;
@@ -72,7 +34,7 @@ int main(int argc, char *argv[])
 	
 	Dropbox::Packet packet = Dropbox::Packet("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
 	Dropbox::WrapperSocket socket = Dropbox::WrapperSocket(SERVER_ADDR, SERVER_PORT);
-	Client client("testUser", socket);
+	Dropbox::Client client("testUser", socket);
 
 	while(!endSession){
 		
