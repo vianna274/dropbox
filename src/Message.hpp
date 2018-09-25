@@ -28,9 +28,11 @@ class Message
 {
   public:
     Message(string message, int part, int totalParts);
+    Message(int type, int part);
     string getMessage();
     void setMessage(string message);
     int getPart();
+    int getType();
     int getTotalParts();
     int getSize();
     void fillWithZeros(int zeros);
@@ -40,6 +42,7 @@ class Message
     int size;
     int part;
     int totalParts;
+    int type;
 };
 
 }

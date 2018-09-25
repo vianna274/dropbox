@@ -9,10 +9,20 @@ Message::Message (string message, int part, int totalParts) {
   this->message = message;
   this->part = part;
   this->size = message.length();
+  this->type = TYPE_DATA;
+}
+
+Message::Message (int type, int part) {
+  this->type = type;
+  this->part = part;
 }
 
 string Message::getMessage() {
   return this->message;
+}
+
+int Message::getType() {
+  return this->type;
 }
 
 int Message::getSize() {
@@ -39,7 +49,7 @@ void Message::fillWithZeros(int zeros) {
 
 MessageData * Message::serialize() {
   MessageData * data = new MessageData();
-  data->type = 0;
+  data->type = this->type;
   data->seq = this->part;
   data->totalSize = this->totalParts;
   data->len = this->size;

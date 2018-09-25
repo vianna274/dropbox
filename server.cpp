@@ -15,9 +15,9 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-	Dropbox::WrapperSocket socket = Dropbox::WrapperSocket("none", SERVER_PORT);
+	Dropbox::WrapperSocket socket = Dropbox::WrapperSocket(SERVER_PORT);
 	while (1) {
-		socket.receive();
+		socket.receive(TIMEOUT_OFF);
 	}
 	return 0;
 }
