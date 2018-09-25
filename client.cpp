@@ -8,17 +8,105 @@
 #include <unistd.h>
 #include <string.h>
 #include <iostream>
+#include <boost/algorithm/string.hpp>
+#include <boost/regex.hpp>
 #include "src/WrapperSocket.hpp"
 #include "src/Packet.hpp"
 #include "src/constants.hpp"
+#include "src/Client.hpp"
 
 #define PORT 4000
 
+using namespace std;
+
+Client::Client (string username, Dropbox::WrapperSocket socket) : username(username), socket(socket){
+	cout << "creating user for " << username << "\n";
+}
+void Client::upload(string filePath){
+	cout << "uploading : " << filePath << "\n";
+}
+void Client::uploadAll(string filePath){
+	cout << "uploading ALL : " << filePath << "\n";
+}
+void Client::download(string filePath){
+	cout << "downloading : " << filePath << "\n";
+}
+void Client::downloadAll(string filePath){
+	cout << "downloading ALL : " << filePath << "\n";
+}
+void Client::updateAll(string filePath){
+	cout << "updating ALL : " << filePath << "\n";
+}
+void Client::del(string filePath){
+	cout << "deleting : " << filePath << "\n";
+}
+void Client::list_server(){
+	cout << "listing servers " << "\n";
+}
+void Client::list_client(){
+	cout << "listing clients" << "\n";
+}
+void Client::get_sync_dir(){
+	cout << "getting sync dir" << "\n";
+}
+void Client::exit(){
+	cout << "exiting" << "\n";
+}
+void Client::triggerNotifications(){
+	cout << "Triggering notifications" << "\n";
+}
+
+vector<string> getArguments(){
+	string input;
+	cout << "> ";
+	getline(cin, input);
+	input.erase(std::remove(input.begin(), input.end(), '\n'), input.end());
+	vector<string> arguments;
+	boost::split(arguments, input, [](char c){return c == ' ';});
+	return arguments;
+}
+
 int main(int argc, char *argv[])
 {
-
+	bool endSession = false;
+	
 	Dropbox::Packet packet = Dropbox::Packet("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
 	Dropbox::WrapperSocket socket = Dropbox::WrapperSocket(SERVER_ADDR, SERVER_PORT);
+	Client client("testUser", socket);
+
+	while(!endSession){
+		
+		vector<string> arguments = getArguments();
+		if(arguments.size() > 0 && arguments.size() < 3){
+			string command = arguments[0];
+			boost::to_upper(command);
+			if (command == "UPLOAD"){
+				if(arguments.size() != 2) puts("Wrong size of command -- upload <file path>");
+				else client.upload(arguments[1]);
+			}else if (command == "DOWNLOAD"){
+				if(arguments.size() != 2) puts("Wrong size of command -- download <file path>");
+				else client.download(arguments[1]);
+			}else if (command == "DELETE"){
+				if(arguments.size() != 2) puts("Wrong size of command -- delete <file path>");
+				else client.download(arguments[1]);
+			}else if (command == "LIST_SERVER"){
+				if(arguments.size() != 1) puts("Wrong size of command -- list_server");
+				else client.list_server();
+			}else if (command == "LIST_CLIENT"){
+				if(arguments.size() != 1) puts("Wrong size of command -- list_client");
+				else client.list_client();
+			}else if (command == "GET_SYNC_DIR"){
+				if(arguments.size() != 1) puts("Wrong size of command -- get_sync_dir");
+				else client.get_sync_dir();
+			}else if(command == "EXIT"){
+				if(arguments.size() != 1) puts("Wrong size of command -- exit");
+				else client.exit();
+				endSession = true;
+			} else {
+				puts("unidentified command!");
+			}
+		}
+	}
 
 	// printf("Enter the message: ");
 	// bzero(buffer, 256);
