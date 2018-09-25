@@ -6,15 +6,15 @@ using namespace Dropbox;
 
 Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), socket(serverAddr, serverDistributorPort){
 	cout << "creating user for " << username << "\n";
-	/*Dropbox::Packet packet = Dropbox::Packet("Requesting new port!");
+	Dropbox::Packet packet = Dropbox::Packet("Requesting new port!");
 	socket.send(packet);
 	cout << "REQUEST SENT" << "\n";
 
 	MessageData * newPort = socket.receive(TIMEOUT_OFF);
 	cout << "RECEIVED NEW PORT!";
 
-	this->socket.bindSocket(stoi(newPort->payload));
-	cout << "NEW PORT :: " << newPort->payload;*/
+	this->socket = Dropbox::WrapperSocket(serverAddr, stoi(newPort->payload));
+	cout << "NEW PORT :: " << newPort->payload << "\n";
 
 }
 

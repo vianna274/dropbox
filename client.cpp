@@ -64,10 +64,6 @@ int main(int argc, char *argv[])
 				if(arguments.size() != 1) puts("Wrong size of command -- exit");
 				else client.exit();
 				endSession = true;
-			} else if (command == "TEST"){
-				puts("Enviando");
-				client.socket.send(packet);
-				puts("Done");
 			} else {
 				puts("unidentified command!");
 			}

@@ -19,8 +19,8 @@ namespace Dropbox
 
         private:
             string username;
-        public:
             Dropbox::WrapperSocket socket;
+        public:
             Client(string username, string serverAddr, int serverDistributorPort);
             void upload(string filePath);
             void uploadAll(string filePath);

@@ -22,6 +22,7 @@ class WrapperSocket
     WrapperSocket(string host, int port);
     WrapperSocket(int port);
     void send(Packet packet);
+    void sendToClient(Packet packet);
     void bindSocket(int port);
     MessageData * receive(int timeout);
   private:

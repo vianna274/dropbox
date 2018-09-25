@@ -24,12 +24,11 @@ int main(int argc, char *argv[])
 	while (1) {
 		(*distributionPort)++;
 		socket.receive(TIMEOUT_OFF);
-		/*pthread_t thread;
+		pthread_t thread;
 		pthread_create(&thread, NULL, &functionalServer, (void*) distributionPort);
 		Dropbox::Packet packet = Dropbox::Packet(to_string(*distributionPort));
-
 		cout << "sending new port";
-		socket.send(packet);*/
+		socket.sendToClient(packet);
 	}
 	return 0;
 }
