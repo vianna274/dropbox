@@ -87,6 +87,7 @@ MessageData * WrapperSocket::receive(int timeout) {
 
   int msgSize = recvfrom(this->localSocketHandler, (void *) msg, PACKET_LEN, 0,
     (struct sockaddr *) &this->localSocketAddr, &this->remoteSocketLen);
+
   if (msgSize < 0) {
     fprintf(stderr, "Error on receiving\n");
     exit(1);
@@ -119,6 +120,7 @@ void WrapperSocket::sendAck(Message ack) {
   }
 }
 
+
 void WrapperSocket::bindSocket(int port) {
   this->remoteSocketAddr.sin_family = AF_INET;
 	this->remoteSocketAddr.sin_port = htons(port);
@@ -128,5 +130,26 @@ void WrapperSocket::bindSocket(int port) {
     sizeof(struct sockaddr)) < 0) {
     fprintf(stderr, "Error on binding");
     exit(1);
+  }
+}
+
+void WrapperSocket::sendToClient(Packet packet) {
+  bool sendAgain = false;
+  for(int i = 0; i < packet.getSize(); i++) {
+    MessageData * toSend = packet.getIndexMessage(i)->serialize();
+    printf("Enviando: %s\n", toSend->payload);
+    printf("Enviando: %d\n", toSend->seq);
+    if (sendto(this->localSocketHandler, (void *)toSend, PACKET_LEN, 0,
+      (const struct sockaddr *) &(this->localSocketAddr),
+      sizeof(struct sockaddr_in)) < 0) {
+      fprintf(stderr, "Error on sending");
+      exit(1);
+    }
+
+    sendAgain = !this->waitAck(toSend->seq);
+    if (sendAgain) {
+      i--;
+      sendAgain = false;
+    }
   }
 }
