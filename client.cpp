@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
 	bool endSession = false;
 	
 	Dropbox::Packet packet = Dropbox::Packet("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
-	Dropbox::WrapperSocket socket = Dropbox::WrapperSocket(SERVER_ADDR, SERVER_PORT);
-	Dropbox::Client client("testUser", socket);
+	//Dropbox::WrapperSocket socket = Dropbox::WrapperSocket(SERVER_ADDR, SERVER_PORT);
+	Dropbox::Client client("testUser", SERVER_ADDR, SERVER_PORT);
 
 	while(!endSession){
 		
@@ -64,6 +64,10 @@ int main(int argc, char *argv[])
 				if(arguments.size() != 1) puts("Wrong size of command -- exit");
 				else client.exit();
 				endSession = true;
+			} else if (command == "TEST"){
+				puts("Enviando");
+				client.socket.send(packet);
+				puts("Done");
 			} else {
 				puts("unidentified command!");
 			}
@@ -73,9 +77,7 @@ int main(int argc, char *argv[])
 	// printf("Enter the message: ");
 	// bzero(buffer, 256);
 	// fgets(buffer, 256, stdin);
-	puts("Enviando");
-	socket.send(packet);
-	puts("Done");
+	
 
 	// n = sendto(sockfd, buffer, strlen(buffer), 0, (const struct sockaddr *) &serv_addr, sizeof(struct sockaddr_in));
 	// if (n < 0)
