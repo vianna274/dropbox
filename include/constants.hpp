@@ -8,6 +8,9 @@
 #define TIMEOUT_ON 1
 #define TIMEOUT_OFF 0
 
+#define FIRST_PORT 4001
+#define LAST_PORT 6000
+
 enum TYPES
 {
   TYPE_DATA,

@@ -16,7 +16,7 @@
 #include <mutex>
 
 #include "constants.hpp"
-#include "Packet.hpp"
+#include "MessageData.hpp"
 #include "WrapperSocket.hpp"
 
 using namespace std;
@@ -28,11 +28,19 @@ class Server
   public:
     Server();
     int getAvailablePort();
-    mutex mt;
+    void sendFile(string filename);
+
+    mutex connectNewClientMutex;
+    mutex portsMutex;
+    string rootDir = "/home/";
+
   private:
     WrapperSocket connectClientSocket;
-    bool portsAvailable[6000];
-    void listenToClient();
+    bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
+
+    void initializePorts();
+    void listenToClient(WrapperSocket *socket);
+    void connectNewClient();
 };
 
 }

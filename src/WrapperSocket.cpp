@@ -35,32 +35,23 @@ WrapperSocket::WrapperSocket (int port) {
 
 }
 
-void WrapperSocket::send(Packet packet) {
-  bool sendAgain = false;
-  for(int i = 0; i < packet.getSize(); i++) {
-    MessageData * toSend = packet.getIndexMessage(i)->serialize();
-    printf("Enviando Type: %d\n", toSend->type);
-        printf("Enviando Type: %s\n", toSend->payload);
+void WrapperSocket::send(MessageData packet) {
+    
+  do{
 
-    if (sendto(this->localSocketHandler, (void *)toSend, PACKET_LEN, 0,
-      (const struct sockaddr *) &(this->remoteSocketAddr),
-      sizeof(struct sockaddr_in)) < 0) {
+    if (sendto(this->localSocketHandler, (void *)&packet, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr),sizeof(struct sockaddr_in)) < 0) {
       fprintf(stderr, "Error on sending");
       exit(1);
     }
 
-    sendAgain = !this->waitAck(toSend->seq);
-    if (sendAgain) {
-      i--;
-      sendAgain = false;
-    }
-  }
+  }while(!this->waitAck(packet.seq));
+  
 }
 
 bool WrapperSocket::waitAck(int seq) {
   bool acked = false;
   while(!acked) {
-    MessageData * response = this->receive(TIMEOUT_ON);
+    MessageData *response = this->receive(TIMEOUT_ON);
     if(!response) {
       return false;
     } 
@@ -101,7 +92,7 @@ MessageData * WrapperSocket::receive(int timeout) {
   if(data->type == TYPE_ACK) {
     printf("Received ACK\n");
   } else {
-    Message message = Message(TYPE_ACK, data->seq);
+    MessageData message; message.type = TYPE_ACK; message.seq = data->seq;
     printf("Sending a ACK\n");
     this->sendAck(message);
   }
@@ -109,8 +100,8 @@ MessageData * WrapperSocket::receive(int timeout) {
   return data;
 }
 
-void WrapperSocket::sendAck(Message ack) {
-  if (sendto(this->localSocketHandler, (void *)ack.serialize(), PACKET_LEN, 0,
+void WrapperSocket::sendAck(MessageData ack) {
+  if (sendto(this->localSocketHandler, (void *)&ack, PACKET_LEN, 0,
     (const struct sockaddr *) &(this->remoteSocketAddr),
     sizeof(struct sockaddr_in)) < 0) {
     fprintf(stderr, "Error on sending");

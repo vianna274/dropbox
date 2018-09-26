@@ -9,7 +9,6 @@
 #include <iostream>
 #include <thread>
 #include "include/WrapperSocket.hpp"
-#include "include/Packet.hpp"
 #include "include/constants.hpp"
 #include "include/Server.hpp"
 

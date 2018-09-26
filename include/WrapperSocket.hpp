@@ -14,7 +14,7 @@
 #include <unistd.h>
 
 #include "constants.hpp"
-#include "Packet.hpp"
+#include "MessageData.hpp"
 
 using namespace std;
 
@@ -26,10 +26,10 @@ class WrapperSocket
     WrapperSocket(string host, int port);
     WrapperSocket(int port);
     ~WrapperSocket();
-    void send(Packet packet);
-    void sendToClient(Packet packet);
+    void send(MessageData packet);
+    void sendToClient(MessageData packet);
     void bindSocket(int port);
-    MessageData * receive(int timeout);
+    MessageData *receive(int timeout);
     
   private:
     int localSocketHandler;
@@ -37,7 +37,7 @@ class WrapperSocket
     sockaddr_in remoteSocketAddr;
     sockaddr_in localSocketAddr;
     socklen_t remoteSocketLen;
-    void sendAck(Message ack);
+    void sendAck(MessageData ack);
     bool waitAck(int seq);
 
 };

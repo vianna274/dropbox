@@ -8,7 +8,7 @@
 #include <netdb.h>
 #include <string.h>
 #include "WrapperSocket.hpp"
-#include "Packet.hpp"
+#include "MessageData.hpp"
 #include "constants.hpp"
 
 
