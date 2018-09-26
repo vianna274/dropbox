@@ -1,4 +1,4 @@
-GPP=g++
+GPP=g++ -std=c++11 -Wall
 BIN_DIR=./bin
 SRC_DIR=./src
 BUILD_DIR=build
@@ -10,8 +10,8 @@ all:
 	$(GPP) -c $(SRC_DIR)/WrapperSocket.cpp -o $(BIN_DIR)/WrapperSocket.o	
 	$(GPP) -c $(SRC_DIR)/Client.cpp -o $(BIN_DIR)/Client.o
 	$(GPP) -c $(SRC_DIR)/Server.cpp -o $(BIN_DIR)/Server.o
-	$(GPP) -o $(BUILD_DIR)/client $(BIN_DIR)/WrapperSocket.o $(BIN_DIR)/Client.o client.cpp -std=c++11 -Wall
-	$(GPP) -o $(BUILD_DIR)/server $(BIN_DIR)/WrapperSocket.o $(BIN_DIR)/Client.o $(BIN_DIR)/Server.o server.cpp -pthread -std=c++11 -Wall
+	$(GPP) -o $(BUILD_DIR)/client $(BIN_DIR)/WrapperSocket.o $(BIN_DIR)/Client.o client.cpp
+	$(GPP) -o $(BUILD_DIR)/server $(BIN_DIR)/WrapperSocket.o $(BIN_DIR)/Client.o $(BIN_DIR)/Server.o server.cpp -pthread
 
 clean:
 	rm -rf *.o *~ build bin

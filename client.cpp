@@ -14,8 +14,6 @@
 #include "include/constants.hpp"
 #include "include/Client.hpp"
 
-#define PORT 4000
-
 using namespace std;
 
 vector<string> getArguments(){
@@ -32,7 +30,13 @@ int main(int argc, char *argv[])
 {
 	bool endSession = false;
 	
-	Dropbox::Client client("testUser", SERVER_ADDR, SERVER_PORT);
+	if(argc != 3){
+            cout << "Incorrect number of arguments.\nExpected ./build/client <username> <server_ip_adress>" << endl;
+            return -1;
+	}
+	string username(argv[1]);
+	string serverIP(argv[2]);
+	Dropbox::Client client(username, serverIP, SERVER_PORT);
 
 	while(!endSession){
 		
@@ -43,25 +47,32 @@ int main(int argc, char *argv[])
 			if (command == "UPLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- upload <file path>");
 				else client.upload(arguments[1]);
+
 			}else if (command == "DOWNLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- download <file path>");
 				else client.download(arguments[1]);
+
 			}else if (command == "DELETE"){
 				if(arguments.size() != 2) puts("Wrong size of command -- delete <file path>");
 				else client.download(arguments[1]);
+
 			}else if (command == "LIST_SERVER"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_server");
 				else client.list_server();
+
 			}else if (command == "LIST_CLIENT"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_client");
 				else client.list_client();
+
 			}else if (command == "GET_SYNC_DIR"){
 				if(arguments.size() != 1) puts("Wrong size of command -- get_sync_dir");
 				else client.get_sync_dir();
+
 			}else if(command == "EXIT"){
 				if(arguments.size() != 1) puts("Wrong size of command -- exit");
 				else client.exit();
 				endSession = true;
+
 			} else {
 				puts("unidentified command!");
 			}
