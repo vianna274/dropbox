@@ -9,10 +9,10 @@
 #include <string.h>
 #include <iostream>
 #include <boost/algorithm/string.hpp>
-#include "src/WrapperSocket.hpp"
-#include "src/Packet.hpp"
-#include "src/constants.hpp"
-#include "src/Client.hpp"
+#include "include/WrapperSocket.hpp"
+#include "include/Packet.hpp"
+#include "include/constants.hpp"
+#include "include/Client.hpp"
 
 #define PORT 4000
 

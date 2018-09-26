@@ -1,21 +1,26 @@
-#include "Client.hpp"
+#include "../include/Client.hpp"
 
 using namespace std;
 using namespace Dropbox;
 
 
-Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), socket(serverAddr, serverDistributorPort){
+Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username){
 	cout << "creating user for " << username << "\n";
-	Dropbox::Packet packet = Dropbox::Packet("Requesting new port!");
-	socket.send(packet);
+	WrapperSocket socketToGetPort(serverAddr, serverDistributorPort);
+	Packet packet = Packet("Requesting new port!");
+	socketToGetPort.send(packet);
 	cout << "REQUEST SENT" << "\n";
 
-	MessageData * newPort = socket.receive(TIMEOUT_OFF);
+	MessageData * newPort = socketToGetPort.receive(TIMEOUT_OFF);
 	cout << "RECEIVED NEW PORT!";
 
-	this->socket = Dropbox::WrapperSocket(serverAddr, stoi(newPort->payload));
+	this->socket = new WrapperSocket(serverAddr, stoi(newPort->payload));
 	cout << "NEW PORT :: " << newPort->payload << "\n";
 
+}
+
+Client::~Client(){
+	delete this->socket;
 }
 
 void Client::upload(string filePath){

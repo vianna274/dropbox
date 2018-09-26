@@ -1,4 +1,4 @@
-#include "WrapperSocket.hpp"
+#include "../include/WrapperSocket.hpp"
 
 #define ERROR -1
 
@@ -18,6 +18,10 @@ WrapperSocket::WrapperSocket (string host, int port) {
   bzero(&(this->remoteSocketAddr.sin_zero), 8);
   this->remoteSocketLen = sizeof(struct sockaddr_in);
 
+}
+
+WrapperSocket::~WrapperSocket(){
+  close(this->localSocketHandler);
 }
 
 WrapperSocket::WrapperSocket (int port) {
@@ -85,8 +89,7 @@ MessageData * WrapperSocket::receive(int timeout) {
   memset(msg, 0, PACKET_LEN);
 	socklen_t sockAddressSize = sizeof(struct sockaddr);
 
-  int msgSize = recvfrom(this->localSocketHandler, (void *) msg, PACKET_LEN, 0,
-    (struct sockaddr *) &this->localSocketAddr, &this->remoteSocketLen);
+  int msgSize = recvfrom(this->localSocketHandler, (void *) msg, PACKET_LEN, 0, (struct sockaddr *) &this->localSocketAddr, &this->remoteSocketLen);
 
   if (msgSize < 0) {
     fprintf(stderr, "Error on receiving\n");
@@ -95,7 +98,7 @@ MessageData * WrapperSocket::receive(int timeout) {
   for(int i = 0; i < PACKET_LEN; i++) {
     printf("%c", msg[i]);
   }
-  MessageData * data = (MessageData *) msg;
+  MessageData *data = (MessageData *) msg;
   if(data->type == TYPE_ACK) {
     printf("Received ACK, Part: %d\n", data->seq);
   } else {
@@ -126,8 +129,7 @@ void WrapperSocket::bindSocket(int port) {
 	this->remoteSocketAddr.sin_port = htons(port);
 	this->remoteSocketAddr.sin_addr.s_addr = INADDR_ANY;
   bzero(&(this->remoteSocketAddr.sin_zero), 8);
-  if (bind(this->localSocketHandler, (struct sockaddr *) &this->remoteSocketAddr,
-    sizeof(struct sockaddr)) < 0) {
+  if (bind(this->localSocketHandler, (struct sockaddr *) &this->remoteSocketAddr, sizeof(struct sockaddr)) < 0) {
     fprintf(stderr, "Error on binding");
     exit(1);
   }

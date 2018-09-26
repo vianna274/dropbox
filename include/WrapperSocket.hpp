@@ -8,6 +8,10 @@
 #include <string.h>
 #include <chrono>
 #include <poll.h>
+#include <arpa/inet.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "constants.hpp"
 #include "Packet.hpp"
@@ -21,14 +25,17 @@ class WrapperSocket
   public:
     WrapperSocket(string host, int port);
     WrapperSocket(int port);
+    ~WrapperSocket();
     void send(Packet packet);
     void sendToClient(Packet packet);
     void bindSocket(int port);
     MessageData * receive(int timeout);
+    
   private:
     int localSocketHandler;
-    hostent * server;
-    sockaddr_in remoteSocketAddr, localSocketAddr;
+    hostent *server;
+    sockaddr_in remoteSocketAddr;
+    sockaddr_in localSocketAddr;
     socklen_t remoteSocketLen;
     void sendAck(Message ack);
     bool waitAck(int seq);
