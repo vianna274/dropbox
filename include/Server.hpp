@@ -25,12 +25,10 @@ namespace Dropbox {
 
 class Server
 {
-
   public:
     Server();
     int getAvailablePort();
     mutex mt;
-    vector<sockaddr_in> clients;
   private:
     WrapperSocket connectClientSocket;
     bool portsAvailable[6000];
