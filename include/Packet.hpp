@@ -15,6 +15,7 @@ class Packet
 {
   public:
     Packet(string message);
+    Packet(int type);
     Message * getIndexMessage(int index);
     string getMessage();
     int getSize();

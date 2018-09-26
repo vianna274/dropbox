@@ -11,7 +11,8 @@
 enum TYPES
 {
   TYPE_DATA,
-  TYPE_ACK
+  TYPE_ACK,
+  TYPE_MAKE_CONNECTION
 };
 
 #endif

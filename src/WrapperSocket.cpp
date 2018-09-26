@@ -39,8 +39,9 @@ void WrapperSocket::send(Packet packet) {
   bool sendAgain = false;
   for(int i = 0; i < packet.getSize(); i++) {
     MessageData * toSend = packet.getIndexMessage(i)->serialize();
-    printf("Enviando: %s\n", toSend->payload);
-    printf("Enviando: %d\n", toSend->seq);
+    printf("Enviando Type: %d\n", toSend->type);
+        printf("Enviando Type: %s\n", toSend->payload);
+
     if (sendto(this->localSocketHandler, (void *)toSend, PACKET_LEN, 0,
       (const struct sockaddr *) &(this->remoteSocketAddr),
       sizeof(struct sockaddr_in)) < 0) {
@@ -64,7 +65,6 @@ bool WrapperSocket::waitAck(int seq) {
       return false;
     } 
     if(response->type == TYPE_ACK && response->seq == seq) { 
-      printf("ACK Received\n");
       return true;
     }
   }
@@ -77,9 +77,9 @@ MessageData * WrapperSocket::receive(int timeout) {
     fd.events = POLLIN;
     int ret = poll(&fd, 1, 500);
     switch(ret) {
-      case -1: printf("\nError\n");
+      case -1: printf("Error\n");
         return NULL;
-      case 0: printf("\nTimeout\n");
+      case 0: printf("Timeout\n");
         return NULL;
       default: break;
     }
@@ -89,25 +89,20 @@ MessageData * WrapperSocket::receive(int timeout) {
   memset(msg, 0, PACKET_LEN);
 	socklen_t sockAddressSize = sizeof(struct sockaddr);
 
-  int msgSize = recvfrom(this->localSocketHandler, (void *) msg, PACKET_LEN, 0, (struct sockaddr *) &this->localSocketAddr, &this->remoteSocketLen);
-
+  int msgSize = recvfrom(this->localSocketHandler, (void *) msg, 
+    PACKET_LEN, 0, (struct sockaddr *) &this->remoteSocketAddr, &this->remoteSocketLen);
   if (msgSize < 0) {
     fprintf(stderr, "Error on receiving\n");
     exit(1);
   }
-  for(int i = 0; i < PACKET_LEN; i++) {
-    printf("%c", msg[i]);
-  }
+
   MessageData *data = (MessageData *) msg;
+  printf("Received a datagram Type: %d\n", data->type);
   if(data->type == TYPE_ACK) {
-    printf("Received ACK, Part: %d\n", data->seq);
+    printf("Received ACK\n");
   } else {
-    printf("\n\nReceived a datagram\n");
-    printf("Type: %d\n", data->type);
-    printf("Seq: %d\n", data->seq);
-    printf("TotalSize: %d\n", data->totalSize);
-    printf("Payload: %s\n", data->payload);
     Message message = Message(TYPE_ACK, data->seq);
+    printf("Sending a ACK\n");
     this->sendAck(message);
   }
   // TODO delete msg
@@ -116,11 +111,12 @@ MessageData * WrapperSocket::receive(int timeout) {
 
 void WrapperSocket::sendAck(Message ack) {
   if (sendto(this->localSocketHandler, (void *)ack.serialize(), PACKET_LEN, 0,
-    (const struct sockaddr *) &(this->localSocketAddr),
+    (const struct sockaddr *) &(this->remoteSocketAddr),
     sizeof(struct sockaddr_in)) < 0) {
     fprintf(stderr, "Error on sending");
     exit(1);
   }
+  printf("ACK sent\n");
 }
 
 
@@ -132,26 +128,5 @@ void WrapperSocket::bindSocket(int port) {
   if (bind(this->localSocketHandler, (struct sockaddr *) &this->remoteSocketAddr, sizeof(struct sockaddr)) < 0) {
     fprintf(stderr, "Error on binding");
     exit(1);
-  }
-}
-
-void WrapperSocket::sendToClient(Packet packet) {
-  bool sendAgain = false;
-  for(int i = 0; i < packet.getSize(); i++) {
-    MessageData * toSend = packet.getIndexMessage(i)->serialize();
-    printf("Enviando: %s\n", toSend->payload);
-    printf("Enviando: %d\n", toSend->seq);
-    if (sendto(this->localSocketHandler, (void *)toSend, PACKET_LEN, 0,
-      (const struct sockaddr *) &(this->localSocketAddr),
-      sizeof(struct sockaddr_in)) < 0) {
-      fprintf(stderr, "Error on sending");
-      exit(1);
-    }
-
-    sendAgain = !this->waitAck(toSend->seq);
-    if (sendAgain) {
-      i--;
-      sendAgain = false;
-    }
   }
 }

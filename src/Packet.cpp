@@ -7,6 +7,11 @@ Packet::Packet(string message) {
   this->messages = this->splitMessage(message);
 }
 
+Packet::Packet(int type) {
+  this->messages = vector<Message>();
+  this->messages.push_back(Message(type, 1));
+}
+
 int Packet::getSize() {
   return this->messages.size();
 }

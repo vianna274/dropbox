@@ -7,12 +7,11 @@ using namespace Dropbox;
 Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username){
 	cout << "creating user for " << username << "\n";
 	WrapperSocket socketToGetPort(serverAddr, serverDistributorPort);
-	Packet packet = Packet("Requesting new port!");
+	Packet packet = Packet(TYPE_MAKE_CONNECTION);
 	socketToGetPort.send(packet);
-	cout << "REQUEST SENT" << "\n";
 
 	MessageData * newPort = socketToGetPort.receive(TIMEOUT_OFF);
-	cout << "RECEIVED NEW PORT!";
+	cout << "RECEIVED NEW PORT!" << endl;
 
 	this->socket = new WrapperSocket(serverAddr, stoi(newPort->payload));
 	cout << "NEW PORT :: " << newPort->payload << "\n";

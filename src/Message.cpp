@@ -1,6 +1,5 @@
 #include "../include/Message.hpp"
 
-
 using namespace std;
 using namespace Dropbox;
 

@@ -30,9 +30,10 @@ class Server
     Server();
     int getAvailablePort();
     mutex mt;
+    vector<sockaddr_in> clients;
   private:
     WrapperSocket connectClientSocket;
-    bool portsAvailable[2000];
+    bool portsAvailable[6000];
     void listenToClient();
 };
 
