@@ -1,4 +1,6 @@
 #include "../include/Client.hpp"
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 using namespace Dropbox;
@@ -26,8 +28,37 @@ Client::~Client(){
 	delete this->socket;
 }
 
+
 void Client::upload(string filePath){
 	cout << "uploading : " << filePath << "\n";
+
+	ifstream file;
+	file.open(filePath, ifstream::in | ifstream::binary);
+	file.seekg(0, file.end);
+	int fileSize = file.tellg();
+	file.seekg(0, file.beg);
+	int totalPackets = (int)((fileSize/MESSAGE_LEN)+1);
+	int lastPacketSize = fileSize % MESSAGE_LEN;
+	int packetsSent = 0;
+	int filePointer = 0;
+	int packetSize = MESSAGE_LEN;
+	while(packetsSent < totalPackets){
+		file.seekg(filePointer, file.beg);
+		filePointer += MESSAGE_LEN;
+		if(packetsSent == totalPackets - 1) packetSize = lastPacketSize;
+		
+		MessageData data;
+		file.read(data.payload, packetSize);
+		data.len = packetSize;
+		data.type = TYPE_DATA;
+		data.seq = packetsSent + 1;
+		data.totalSize = totalPackets;
+		
+		this->socket->send(data);
+
+		packetsSent++;
+	}
+	file.close();
 }
 
 void Client::uploadAll(string filePath){

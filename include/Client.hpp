@@ -23,6 +23,7 @@ namespace Dropbox
         public:
             Client(string username, string serverAddr, int serverDistributorPort);
             ~Client();
+
             void upload(string filePath);
             void uploadAll(string filePath);
             void download(string filePath);

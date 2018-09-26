@@ -28,7 +28,6 @@ class Server
   public:
     Server();
     int getAvailablePort();
-    void sendFile(string filename);
 
     mutex connectNewClientMutex;
     mutex portsMutex;
