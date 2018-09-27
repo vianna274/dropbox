@@ -5,13 +5,36 @@ using namespace Dropbox;
 
 Server::Server() : connectClientSocket(SERVER_PORT)
 {
+    initializeUsers();
     initializePorts();
 
     while(true){
-        this->connectNewClientMutex.lock();
         connectNewClient();
-        this->connectNewClientMutex.unlock();
     }
+}
+
+void Server::initializeUsers()
+{
+    DIR *dir;
+    struct dirent *ent;
+    if ((dir = opendir (rootDir.c_str())) != NULL) {
+        while ((ent = readdir (dir)) != NULL) {
+            if(ent->d_type == 0x4 && string(ent->d_name) != string("..") && string(ent->d_name) != string(".")) {
+                User *user = new User(ent->d_name);
+                users.push_back(user);
+            }
+        }
+        closedir (dir);
+    } else if(mkdir(rootDir.c_str(), 0777) == 0) cout << "CREATED ROOT DIR" << endl;
+    else cout << "COULDN'T OPEN OR CREATE ROOT DIR" << endl;
+
+    cout << "System users :" << endl;
+
+    for(User *user : users)
+    {
+        cout << user->getUsername().c_str() << endl;
+    }
+
 }
 
 void Server::initializePorts()
@@ -30,7 +53,6 @@ int Server::getAvailablePort()
             return p;
         }
     }
-    portsMutex.unlock();
     return -1;
 }
 
@@ -41,6 +63,10 @@ User* Server::getUser(string username)
             return users[i];
         }
     }
+    string userDir = rootDir + username;
+    cout << userDir << endl;
+    if(mkdir(userDir.c_str(), 0777) == 0) cout << "CREATED USER DIR" << endl;
+    else cout << "COULDN'T CREATE USERS DIRECTORY!" << endl;
     return nullptr;
 }
 
@@ -70,9 +96,6 @@ void Server::connectNewClient()
         connectClientSocket.send(packet);
 
         user->addDevice(socket);
-        if(getUser(username) == nullptr){
-            users.push_back(user);
-        }
 
         thread listenToClientThread(&Server::listenToClient, this, socket);
         listenToClientThread.detach();

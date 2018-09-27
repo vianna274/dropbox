@@ -32,7 +32,7 @@ class Server
 
     mutex connectNewClientMutex;
     mutex portsMutex;
-    string rootDir = "/home/";
+    string rootDir = "/tmp/DropboxService/";
 
   private:
     WrapperSocket connectClientSocket;
@@ -40,6 +40,7 @@ class Server
     vector<User*> users;
 
     void initializePorts();
+    void initializeUsers();
     void listenToClient(WrapperSocket *socket);
     void refuseOverLimitClient(User user);
     void connectNewClient();
