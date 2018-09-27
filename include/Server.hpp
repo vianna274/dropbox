@@ -18,6 +18,7 @@
 #include "constants.hpp"
 #include "MessageData.hpp"
 #include "WrapperSocket.hpp"
+#include "User.hpp"
 
 using namespace std;
 
@@ -36,10 +37,12 @@ class Server
   private:
     WrapperSocket connectClientSocket;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
+    vector<User*> users;
 
     void initializePorts();
     void listenToClient(WrapperSocket *socket);
     void connectNewClient();
+    User* getUser(string username);
 };
 
 }

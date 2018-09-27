@@ -92,7 +92,9 @@ MessageData * WrapperSocket::receive(int timeout) {
   if(data->type == TYPE_ACK) {
     printf("Received ACK\n");
   } else {
-    MessageData message; message.type = TYPE_ACK; message.seq = data->seq;
+    MessageData message; 
+    message.type = TYPE_ACK; 
+    message.seq = data->seq;
     printf("Sending a ACK\n");
     this->sendAck(message);
   }

@@ -6,22 +6,34 @@ using namespace std;
 using namespace Dropbox;
 
 
-Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username){
+Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), syncDirPath("/tmp/sync_dir_"+username){
+
+	createSyncDir();
+
 	cout << "creating user for " << username << "\n";
 	WrapperSocket socketToGetPort(serverAddr, serverDistributorPort);
+
 	MessageData request;
 	strcpy(request.payload, username.c_str());
 	request.type = TYPE_MAKE_CONNECTION;
+	request.seq = 1; request.totalSize = 1;
 	socketToGetPort.send(request);
 	cout << "REQUEST SENT" << "\n";
 	
 	MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
-	if(newPort->type == TYPE_MAKE_CONNECTION)
+	if(newPort->type == TYPE_MAKE_CONNECTION){
 		cout << "RECEIVED NEW PORT!";
 
-	this->socket = new WrapperSocket(serverAddr, stoi(newPort->payload));
-	cout << "NEW PORT :: " << newPort->payload << "\n";
+		this->socket = new WrapperSocket(serverAddr, stoi(newPort->payload));
+		cout << "NEW PORT :: " << newPort->payload << "\n";
+	}
+}
 
+void Client::createSyncDir(){
+
+	struct stat st;
+	if(stat(syncDirPath.c_str(), &st) == -1) //Se não existe cria, se existe faz nada
+		mkdir(syncDirPath.c_str(), 0777);
 }
 
 Client::~Client(){
@@ -31,6 +43,7 @@ Client::~Client(){
 
 void Client::upload(string filePath){
 	cout << "uploading : " << filePath << "\n";
+	//TODO: TRATAR PEGAR O SÓ NOME DO FILEPATH
 
 	ifstream file;
 	file.open(filePath, ifstream::in | ifstream::binary);

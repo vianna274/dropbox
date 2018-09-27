@@ -7,6 +7,9 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <utime.h>
+#include <dirent.h>
 #include "WrapperSocket.hpp"
 #include "MessageData.hpp"
 #include "constants.hpp"
@@ -20,6 +23,9 @@ namespace Dropbox
         private:
             string username;
             Dropbox::WrapperSocket *socket;
+            string syncDirPath;
+
+            void createSyncDir();
         public:
             Client(string username, string serverAddr, int serverDistributorPort);
             ~Client();
