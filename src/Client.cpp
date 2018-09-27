@@ -6,7 +6,8 @@ using namespace std;
 using namespace Dropbox;
 
 
-Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), syncDirPath("/tmp/sync_dir_"+username){
+Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), syncDirPath("/tmp/sync_dir_"+username)
+{
 
 	createSyncDir();
 
@@ -25,7 +26,10 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 		cout << "RECEIVED NEW PORT!";
 
 		this->socket = new WrapperSocket(serverAddr, stoi(newPort->payload));
-		cout << "NEW PORT :: " << newPort->payload << "\n";
+		cout << "NEW PORT :: " << newPort->payload << endl;
+	} else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
+		cout << newPort->payload << endl;
+		std::exit(1);
 	}
 }
 
