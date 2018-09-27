@@ -11,14 +11,11 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 
 	createSyncDir();
 
-	cout << "creating user for " << username << "\n";
 	WrapperSocket socketToGetPort(serverAddr, serverDistributorPort);
 
-	MessageData request;
-	strcpy(request.payload, username.c_str());
-	request.type = TYPE_MAKE_CONNECTION;
-	request.seq = 1; request.totalSize = 1;
-	socketToGetPort.send(request);
+	MessageData *request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, username.c_str());
+	socketToGetPort.send(*request);
+	free(request);
 	cout << "REQUEST SENT" << "\n";
 	
 	MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
@@ -34,7 +31,6 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 }
 
 void Client::createSyncDir(){
-
 	struct stat st;
 	if(stat(syncDirPath.c_str(), &st) == -1) //Se não existe cria, se existe faz nada
 		mkdir(syncDirPath.c_str(), 0777);
@@ -59,19 +55,16 @@ void Client::upload(string filePath){
 	int packetsSent = 0;
 	int filePointer = 0;
 	int packetSize = MESSAGE_LEN;
+	char buffer[MESSAGE_LEN];
 	while(packetsSent < totalPackets){
 		file.seekg(filePointer, file.beg);
 		filePointer += MESSAGE_LEN;
 		if(packetsSent == totalPackets - 1) packetSize = lastPacketSize;
 		
-		MessageData data;
-		file.read(data.payload, packetSize);
-		data.len = packetSize;
-		data.type = TYPE_DATA;
-		data.seq = packetsSent + 1;
-		data.totalSize = totalPackets;
-		
-		this->socket->send(data);
+		file.read(buffer, packetSize);
+		MessageData *packet = make_packet(TYPE_DATA, packetsSent + 1, totalPackets, packetSize, buffer);
+		this->socket->send(*packet);
+		free(packet);
 
 		packetsSent++;
 	}

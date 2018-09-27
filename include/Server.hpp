@@ -32,7 +32,7 @@ class Server
 
     mutex connectNewClientMutex;
     mutex portsMutex;
-    string rootDir = "/tmp/DropboxService/";
+    const string rootDir = "/tmp/DropboxService/";
 
   private:
     WrapperSocket connectClientSocket;

@@ -1,4 +1,5 @@
 #include "../include/WrapperSocket.hpp"
+#include "../include/MessageData.hpp"
 
 #define ERROR -1
 
@@ -92,11 +93,10 @@ MessageData * WrapperSocket::receive(int timeout) {
   if(data->type == TYPE_ACK) {
     printf("Received ACK\n");
   } else {
-    MessageData message; 
-    message.type = TYPE_ACK; 
-    message.seq = data->seq;
+    MessageData *message = make_packet(TYPE_ACK, data->seq, 1, -1, ""); 
     printf("Sending a ACK\n");
-    this->sendAck(message);
+    this->sendAck(*message);
+    free(message);
   }
   // TODO delete msg
   return data;

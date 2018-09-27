@@ -11,8 +11,9 @@ all:
 	$(GPP) -c $(SRC_DIR)/Client.cpp -o $(BIN_DIR)/Client.o
 	$(GPP) -c $(SRC_DIR)/Server.cpp -o $(BIN_DIR)/Server.o
 	$(GPP) -c $(SRC_DIR)/User.cpp -o $(BIN_DIR)/User.o
-	$(GPP) -o $(BUILD_DIR)/client $(BIN_DIR)/WrapperSocket.o $(BIN_DIR)/Client.o $(BIN_DIR)/Server.o $(BIN_DIR)/User.o client.cpp -pthread
-	$(GPP) -o $(BUILD_DIR)/server $(BIN_DIR)/WrapperSocket.o $(BIN_DIR)/Client.o $(BIN_DIR)/Server.o $(BIN_DIR)/User.o server.cpp -pthread
+	$(GPP) -c $(SRC_DIR)/MessageData.cpp -o $(BIN_DIR)/MessageData.o
+	$(GPP) -o $(BUILD_DIR)/client $(BIN_DIR)/WrapperSocket.o $(BIN_DIR)/Client.o $(BIN_DIR)/Server.o $(BIN_DIR)/User.o $(BIN_DIR)/MessageData.o client.cpp -pthread
+	$(GPP) -o $(BUILD_DIR)/server $(BIN_DIR)/WrapperSocket.o $(BIN_DIR)/Client.o $(BIN_DIR)/Server.o $(BIN_DIR)/User.o $(BIN_DIR)/MessageData.o server.cpp -pthread
 
 clean:
 	rm -rf *.o *~ build bin

@@ -21,11 +21,14 @@ namespace Dropbox
     {
         private:
             string username;
+            string dirPath;
             vector<int> files; //CRIAR TIPO FILE
             vector<WrapperSocket*> devices;
 
+            void createUserDir();
+
         public:
-            User(string username);
+            User(string username, string dirPath);
             string getUsername();
             int getNumDevicesConnected();
             void addDevice(WrapperSocket *socket);

@@ -5,8 +5,14 @@
 using namespace std;
 using namespace Dropbox;
 
-User::User(string username): username(username){
+User::User(string username, string dirPath): username(username), dirPath(dirPath){
+    createUserDir();
+}
 
+void User::createUserDir(){
+    struct stat st;
+	if(stat(dirPath.c_str(), &st) == -1) //Se não existe cria, se existe faz nada
+		mkdir(dirPath.c_str(), 0777);
 }
 
 string User::getUsername(){

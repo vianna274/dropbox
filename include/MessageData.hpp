@@ -24,6 +24,7 @@ struct _MessageData
 
 typedef _MessageData MessageData;
 
+MessageData* make_packet(int type, int seq, int totalSize, int len, const char *payload);
 
 }
 
