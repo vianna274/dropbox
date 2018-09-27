@@ -9,9 +9,7 @@ Server::Server() : connectClientSocket(SERVER_PORT)
     initializePorts();
 
     while(true){
-        this->connectNewClientMutex.lock();
         connectNewClient();
-        this->connectNewClientMutex.unlock();
     }
 }
 
@@ -22,21 +20,18 @@ void Server::initializeUsers()
     if ((dir = opendir (rootDir.c_str())) != NULL) {
         while ((ent = readdir (dir)) != NULL) {
             if(ent->d_type == 0x4 && string(ent->d_name) != string("..") && string(ent->d_name) != string(".")) {
-                User user(ent->d_name);
-                users.push_back(&user);
+                User *user = new User(ent->d_name);
+                users.push_back(user);
             }
         }
         closedir (dir);
     } else if(mkdir(rootDir.c_str(), 0777) == 0) cout << "CREATED ROOT DIR" << endl;
     else cout << "COULDN'T OPEN OR CREATE ROOT DIR" << endl;
 
-
-    
-    for(User * user : users)
+    for(User *user : users)
     {
         cout << user->getUsername().c_str() << endl;
     }
-    
 
 }
 

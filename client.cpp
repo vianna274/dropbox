@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 	bool endSession = false;
 	
 	if(argc != 3){
-            cout << "Incorrect number of arguments.\nExpected ./build/client <username> <server_ip_adress>" << endl;
-            return -1;
+        cout << "Incorrect number of arguments.\nExpected ./build/client <username> <server_ip_adress>" << endl;
+        return -1;
 	}
 	string username(argv[1]);
 	string serverIP(argv[2]);
