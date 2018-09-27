@@ -41,6 +41,7 @@ class Server
 
     void initializePorts();
     void listenToClient(WrapperSocket *socket);
+    void refuseOverLimitClient(User user);
     void connectNewClient();
     User* getUser(string username);
 };

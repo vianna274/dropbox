@@ -3,7 +3,8 @@
 using namespace std;
 using namespace Dropbox;
 
-Server::Server() : connectClientSocket(SERVER_PORT){
+Server::Server() : connectClientSocket(SERVER_PORT)
+{
     initializePorts();
 
     while(true){
@@ -13,19 +14,19 @@ Server::Server() : connectClientSocket(SERVER_PORT){
     }
 }
 
-void Server::initializePorts(){
+void Server::initializePorts()
+{
     for(int p = FIRST_PORT; p <= LAST_PORT; p++){
         portsAvailable[p - FIRST_PORT] = true;
     }
 }
 
-int Server::getAvailablePort(){
-    portsMutex.lock();
+int Server::getAvailablePort()
+{
     for(int p = FIRST_PORT; p <= LAST_PORT; p++){
         int i = p - FIRST_PORT;
         if(portsAvailable[i]){
             portsAvailable[i] = false;
-            portsMutex.unlock();
             return p;
         }
     }
@@ -33,7 +34,8 @@ int Server::getAvailablePort(){
     return -1;
 }
 
-User* Server::getUser(string username){
+User* Server::getUser(string username)
+{
     for(unsigned i = 0; i < users.size(); i++){
         if(users[i]->getUsername() == username){
             return users[i];
@@ -42,7 +44,8 @@ User* Server::getUser(string username){
     return nullptr;
 }
 
-void Server::connectNewClient(){
+void Server::connectNewClient()
+{
 
     MessageData *d = connectClientSocket.receive(TIMEOUT_OFF);
     
@@ -54,6 +57,7 @@ void Server::connectNewClient(){
         }
         else if(user->getNumDevicesConnected() == MAX_DEVICES){
             cout << "NO MORE DEVICES AVAILABLE" << endl;
+            refuseOverLimitClient(*user);
             return;
         }
 
@@ -74,6 +78,16 @@ void Server::connectNewClient(){
         listenToClientThread.detach();
     }
 
+}
+
+void Server::refuseOverLimitClient(User user)
+{
+    MessageData packet;
+    string message;
+    message = "Number of devices for user " + user.getUsername() + " were used up! Max number of devices : " + to_string(MAX_DEVICES);
+    strcpy(packet.payload, message.c_str());
+    packet.type = TYPE_REJECT_TO_LISTEN; packet.totalSize = 1; packet.seq = 1;
+    connectClientSocket.send(packet);
 }
 
 void Server::listenToClient(WrapperSocket *socket)
