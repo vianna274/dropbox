@@ -28,6 +28,8 @@ void Server::initializeUsers()
     } else if(mkdir(rootDir.c_str(), 0777) == 0) cout << "CREATED ROOT DIR" << endl;
     else cout << "COULDN'T OPEN OR CREATE ROOT DIR" << endl;
 
+    cout << "System users :" << endl;
+
     for(User *user : users)
     {
         cout << user->getUsername().c_str() << endl;
