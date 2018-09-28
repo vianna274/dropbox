@@ -10,9 +10,11 @@
 #include <sys/stat.h>
 #include <utime.h>
 #include <dirent.h>
+#include <iomanip>
 #include "WrapperSocket.hpp"
 #include "MessageData.hpp"
 #include "constants.hpp"
+#include "FileRecord.hpp"
 
 
 namespace Dropbox
