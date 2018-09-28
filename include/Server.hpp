@@ -15,11 +15,17 @@
 #include <thread>
 #include <mutex>
 #include <fstream>
+#include <time.h>
+#include <chrono>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "constants.hpp"
 #include "MessageData.hpp"
 #include "WrapperSocket.hpp"
 #include "User.hpp"
+#include "FileRecord.hpp"
 
 using namespace std;
 
@@ -40,6 +46,7 @@ class Server
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
 
+    vector<FileRecord> getServerFileStatus(User *user);
     void initializePorts();
     void setPortAvailable(int port);
     void initializeUsers();

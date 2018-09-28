@@ -1,10 +1,11 @@
 #include "../include/Server.hpp"
 
 using namespace std;
-using namespace Dropbox;
+using namespace Dropbox; 
 
 Server::Server() : connectClientSocket(SERVER_PORT)
 {
+    cout << to_string(sizeof(FileRecord)) << endl;
     initializeUsers();
     initializePorts();
 
@@ -24,11 +25,11 @@ void Server::initializeUsers()
                 users.push_back(user);
             }
         }
-        closedir (dir);
+        closedir(dir);
     } 
     else if(mkdir(rootDir.c_str(), 0777) == 0) 
         cout << "CREATED ROOT DIR" << endl;
-    else 
+    else
         cout << "COULDN'T OPEN OR CREATE ROOT DIR" << endl;
 
     cout << "System Users :" << endl;
@@ -36,7 +37,6 @@ void Server::initializeUsers()
     {
         cout << user->getUsername().c_str() << endl;
     }
-
 }
 
 void Server::initializePorts()
@@ -56,6 +56,28 @@ int Server::getAvailablePort()
         }
     }
     return -1;
+}
+
+vector<FileRecord> Server::getServerFileStatus(User *user)
+{
+    vector<FileRecord> files;
+    struct stat filestatus;
+    string extension;
+    DIR *dir;
+    struct dirent *ent;
+
+    if ((dir = opendir (user->getDirPath().c_str())) != NULL) {
+        while ((ent = readdir (dir)) != NULL) {
+            if(ent->d_type == 0x8) {
+                stat((user->getDirPath() + ent->d_name).c_str(), &filestatus);
+                extension = string(ent->d_name).substr(string(ent->d_name).find_last_of(".") + 1);
+                FileRecord fileRecord = make_record(ent->d_name, extension.c_str(), ctime(&(filestatus.st_mtim.tv_sec)), filestatus.st_size);
+                files.push_back(fileRecord);
+            }
+        }
+        closedir(dir);
+    }
+    return files;
 }
 
 User* Server::getUser(string username)
@@ -85,6 +107,8 @@ void Server::connectNewClient()
             return;
         }
 
+        vector<FileRecord> tmp = getServerFileStatus(user);
+
         int newPort = getAvailablePort();
         MessageData packet = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, to_string(newPort).c_str());
 	    WrapperSocket *socket = new WrapperSocket(newPort);
@@ -97,7 +121,6 @@ void Server::connectNewClient()
         thread listenToClientThread(&Server::listenToClient, this, socket, user);
         listenToClientThread.detach();
     }
-
 }
 
 void Server::refuseOverLimitClient(User *user)
@@ -115,7 +138,18 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
         switch(data->type){
             case TYPE_DATA:
                 break;
-
+            case TYPE_LIST_SERVER:{
+                vector<FileRecord> files = getServerFileStatus(user);
+                int seq = 0;
+                for(FileRecord record : files) {
+                    MessageData packet = make_packet(TYPE_DATA, seq, files.size()-1, sizeof(FileRecord), (char*)&record);
+                    //FileRecord test = *((FileRecord*)(packet.payload));
+                    //cout << test.filename << endl;
+                    socket->send(&packet);
+                    seq++;
+                }
+                break;
+            }
             case TYPE_SEND_FILE:
                 receiveUpload(string(data->payload), socket, user);
                 break;
