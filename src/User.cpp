@@ -26,3 +26,12 @@ int User::getNumDevicesConnected(){
 void User::addDevice(WrapperSocket *socket){
     devices.push_back(socket);
 }
+
+void User::closeDeviceSession(WrapperSocket *socket){
+    for(auto it = devices.begin(); it != devices.end(); it++){
+        if(*it == socket){
+            devices.erase(it);
+            break;
+        }
+    }
+}

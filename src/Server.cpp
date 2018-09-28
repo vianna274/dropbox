@@ -77,43 +77,41 @@ void Server::connectNewClient()
         string username(d->payload);
         User *user = getUser(username);
         if(user == nullptr){
-            cout << "User don't exist yet" << endl;
             user = new User(username, rootDir+username+"/");
             users.push_back(user);
         }
         else if(user->getNumDevicesConnected() == MAX_DEVICES){
-            cout << "NO MORE DEVICES AVAILABLE" << endl;
-            refuseOverLimitClient(*user);
+            refuseOverLimitClient(user);
             return;
         }
-        cout<< "num devices"<< user->getNumDevicesConnected() << endl;
 
         int newPort = getAvailablePort();
-        MessageData *packet = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, to_string(newPort).c_str());
+        MessageData packet = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, to_string(newPort).c_str());
 	    WrapperSocket *socket = new WrapperSocket(newPort);
-        connectClientSocket.send(*packet);
-        free(packet);
+        connectClientSocket.send(&packet);
 
         user->addDevice(socket);
 
-        thread listenToClientThread(&Server::listenToClient, this, socket);
+        cout << "User " << user->getUsername() << " connected on port " << newPort << ". " << "Device " << user->getNumDevicesConnected() << "/" << MAX_DEVICES << endl; 
+
+        thread listenToClientThread(&Server::listenToClient, this, socket, user);
         listenToClientThread.detach();
     }
 
 }
 
-void Server::refuseOverLimitClient(User user)
+void Server::refuseOverLimitClient(User *user)
 {
-    string message = "Number of devices for user " + user.getUsername() + " were used up! Max number of devices : " + to_string(MAX_DEVICES);
-    MessageData *packet = make_packet(TYPE_REJECT_TO_LISTEN, 1, 1, -1, message.c_str());
+    string message = "Number of devices for user " + user->getUsername() + " were used up! Max number of devices : " + to_string(MAX_DEVICES);
+    MessageData packet = make_packet(TYPE_REJECT_TO_LISTEN, 1, 1, -1, message.c_str());
 
-    connectClientSocket.send(*packet);
-    free(packet);
+    connectClientSocket.send(&packet);
 }
 
-void Server::listenToClient(WrapperSocket *socket)
+void Server::listenToClient(WrapperSocket *socket, User *user)
 {   
-	while(true){
+    bool exit = false;
+	while(!exit){
 		MessageData *data = socket->receive(TIMEOUT_OFF);
         switch(data->type){
             case TYPE_DATA:
@@ -121,8 +119,20 @@ void Server::listenToClient(WrapperSocket *socket)
 
             case TYPE_SEND_FILE:
             break;
+
+            case EXIT:
+                int port = socket->getPortInt();
+                user->closeDeviceSession(socket);
+                setPortAvailable(port);
+                exit = true;
+                cout << "User " + user->getUsername() + " ended session on device on port " << port << endl;
+                break;
         }
 	}
 
     delete socket;
+}
+
+void Server::setPortAvailable(int port){
+    this->portsAvailable[port - FIRST_PORT] = true;
 }

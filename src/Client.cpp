@@ -13,36 +13,35 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 
 	WrapperSocket socketToGetPort(serverAddr, serverDistributorPort);
 
-	MessageData *request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, username.c_str());
-	socketToGetPort.send(*request);
-	free(request);
-	cout << "REQUEST SENT" << "\n";
+	MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, username.c_str());
+	socketToGetPort.send(&request);
 	
 	MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
 	if(newPort->type == TYPE_MAKE_CONNECTION){
-		cout << "RECEIVED NEW PORT!";
-
 		this->socket = new WrapperSocket(serverAddr, stoi(newPort->payload));
-		cout << "NEW PORT :: " << newPort->payload << endl;
-	} else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
+	} 
+	else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
 		cout << newPort->payload << endl;
 		std::exit(1);
 	}
+
+	cout << "Connected Successfully." << endl;
 }
 
 void Client::createSyncDir(){
 	struct stat st;
-	if(stat(syncDirPath.c_str(), &st) == -1) //Se não existe cria, se existe faz nada
+	if(stat(syncDirPath.c_str(), &st) == -1){ //Se não existe cria, se existe faz nada
 		mkdir(syncDirPath.c_str(), 0777);
+		cout << "Created Sync Dir on " + syncDirPath << endl;
+	}
 }
 
 Client::~Client(){
 	delete this->socket;
 }
 
-
 void Client::upload(string filePath){
-	cout << "uploading : " << filePath << "\n";
+
 	//TODO: TRATAR PEGAR O SÓ NOME DO FILEPATH
 
 	ifstream file;
@@ -62,9 +61,8 @@ void Client::upload(string filePath){
 		if(packetsSent == totalPackets - 1) packetSize = lastPacketSize;
 		
 		file.read(buffer, packetSize);
-		MessageData *packet = make_packet(TYPE_DATA, packetsSent + 1, totalPackets, packetSize, buffer);
-		this->socket->send(*packet);
-		free(packet);
+		MessageData packet = make_packet(TYPE_DATA, packetsSent + 1, totalPackets, packetSize, buffer);
+		this->socket->send(&packet);
 
 		packetsSent++;
 	}
@@ -104,7 +102,8 @@ void Client::get_sync_dir(){
 }
 
 void Client::exit(){
-	cout << "exiting" << "\n";
+	MessageData message = make_packet(EXIT, 1, 1, -1, "");
+	this->socket->send(&message);
 }
 
 void Client::triggerNotifications(){

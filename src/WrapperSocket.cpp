@@ -19,6 +19,7 @@ WrapperSocket::WrapperSocket (string host, int port) {
   bzero(&(this->remoteSocketAddr.sin_zero), 8);
   this->remoteSocketLen = sizeof(struct sockaddr_in);
 
+  this->portInt = port;
 }
 
 WrapperSocket::~WrapperSocket(){
@@ -34,18 +35,19 @@ WrapperSocket::WrapperSocket (int port) {
   this->bindSocket(port);
   this->remoteSocketLen = sizeof(struct sockaddr_in);
 
+  this->portInt = port;
 }
 
-void WrapperSocket::send(MessageData packet) {
+void WrapperSocket::send(MessageData *packet) {
     
   do{
 
-    if (sendto(this->localSocketHandler, (void *)&packet, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr),sizeof(struct sockaddr_in)) < 0) {
+    if (sendto(this->localSocketHandler, (void *)packet, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr),sizeof(struct sockaddr_in)) < 0) {
       fprintf(stderr, "Error on sending");
       exit(1);
     }
 
-  }while(!this->waitAck(packet.seq));
+  }while(!this->waitAck(packet->seq));
   
 }
 
@@ -62,7 +64,7 @@ bool WrapperSocket::waitAck(int seq) {
   }
 }
 
-MessageData * WrapperSocket::receive(int timeout) {
+MessageData* WrapperSocket::receive(int timeout) {
   if(timeout == TIMEOUT_ON) {
     struct pollfd fd;
     fd.fd = this->localSocketHandler;
@@ -89,27 +91,25 @@ MessageData * WrapperSocket::receive(int timeout) {
   }
 
   MessageData *data = (MessageData *) msg;
-  printf("Received a datagram Type: %d\n", data->type);
+  //printf("Received a datagram Type: %d\n", data->type);
   if(data->type == TYPE_ACK) {
-    printf("Received ACK\n");
+    //printf("Received ACK\n");
   } else {
-    MessageData *message = make_packet(TYPE_ACK, data->seq, 1, -1, ""); 
-    printf("Sending a ACK\n");
-    this->sendAck(*message);
-    free(message);
+    MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
+    //printf("Sending a ACK\n");
+    this->sendAck(&message);
+    
   }
   // TODO delete msg
   return data;
 }
 
-void WrapperSocket::sendAck(MessageData ack) {
-  if (sendto(this->localSocketHandler, (void *)&ack, PACKET_LEN, 0,
-    (const struct sockaddr *) &(this->remoteSocketAddr),
-    sizeof(struct sockaddr_in)) < 0) {
+void WrapperSocket::sendAck(MessageData *ack) {
+  if (sendto(this->localSocketHandler, (void *)ack, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr), sizeof(struct sockaddr_in)) < 0) {
     fprintf(stderr, "Error on sending");
     exit(1);
   }
-  printf("ACK sent\n");
+  //printf("ACK sent\n");
 }
 
 
@@ -122,4 +122,8 @@ void WrapperSocket::bindSocket(int port) {
     fprintf(stderr, "Error on binding");
     exit(1);
   }
+}
+
+int WrapperSocket::getPortInt(){
+  return this->portInt;
 }

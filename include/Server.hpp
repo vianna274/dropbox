@@ -40,9 +40,10 @@ class Server
     vector<User*> users;
 
     void initializePorts();
+    void setPortAvailable(int port);
     void initializeUsers();
-    void listenToClient(WrapperSocket *socket);
-    void refuseOverLimitClient(User user);
+    void listenToClient(WrapperSocket *socket, User *user);
+    void refuseOverLimitClient(User *user);
     void connectNewClient();
     User* getUser(string username);
 };

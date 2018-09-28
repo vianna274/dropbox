@@ -26,18 +26,19 @@ class WrapperSocket
     WrapperSocket(string host, int port);
     WrapperSocket(int port);
     ~WrapperSocket();
-    void send(MessageData packet);
-    void sendToClient(MessageData packet);
+    void send(MessageData *packet);
     void bindSocket(int port);
     MessageData *receive(int timeout);
+    int getPortInt();
     
   private:
     int localSocketHandler;
+    int portInt;
     hostent *server;
     sockaddr_in remoteSocketAddr;
     sockaddr_in localSocketAddr;
     socklen_t remoteSocketLen;
-    void sendAck(MessageData ack);
+    void sendAck(MessageData *ack);
     bool waitAck(int seq);
 
 };

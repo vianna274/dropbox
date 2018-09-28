@@ -32,7 +32,7 @@ namespace Dropbox
             string getUsername();
             int getNumDevicesConnected();
             void addDevice(WrapperSocket *socket);
-
+            void closeDeviceSession(WrapperSocket *socket);
     };
 }
 
