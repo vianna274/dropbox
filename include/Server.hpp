@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <thread>
 #include <mutex>
+#include <fstream>
 
 #include "constants.hpp"
 #include "MessageData.hpp"
@@ -46,6 +47,8 @@ class Server
     void refuseOverLimitClient(User *user);
     void connectNewClient();
     User* getUser(string username);
+
+    void receiveUpload(string filename, WrapperSocket *socket, User *user);
 };
 
 }

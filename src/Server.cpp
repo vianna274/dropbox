@@ -104,7 +104,6 @@ void Server::refuseOverLimitClient(User *user)
 {
     string message = "Number of devices for user " + user->getUsername() + " were used up! Max number of devices : " + to_string(MAX_DEVICES);
     MessageData packet = make_packet(TYPE_REJECT_TO_LISTEN, 1, 1, -1, message.c_str());
-
     connectClientSocket.send(&packet);
 }
 
@@ -115,10 +114,11 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 		MessageData *data = socket->receive(TIMEOUT_OFF);
         switch(data->type){
             case TYPE_DATA:
-            break;
+                break;
 
             case TYPE_SEND_FILE:
-            break;
+                receiveUpload(string(data->payload), socket, user);
+                break;
 
             case EXIT:
                 int port = socket->getPortInt();
@@ -135,4 +135,27 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 
 void Server::setPortAvailable(int port){
     this->portsAvailable[port - FIRST_PORT] = true;
+}
+
+void Server::receiveUpload(string filename, WrapperSocket *socket, User *user){
+    string filePath = user->getDirPath() + filename;
+
+    ofstream newFile;
+	newFile.open(filePath, ofstream::trunc | ofstream::binary);
+	if(!newFile.is_open()) {
+		cout << "Erro ao receber arquivo " << filePath << ". Não foi possível criar cópia local." << endl;
+		return;
+    }
+    int seqNumber, totalPackets;
+    do{
+        MessageData *packet = socket->receive(TIMEOUT_OFF);
+        seqNumber = packet->seq;
+        totalPackets = packet->totalSize;
+        cout << "i-"<< seqNumber << " t-"<<totalPackets << " l-" <<packet->len << endl;
+        newFile.write(packet->payload, packet->len);
+    }while(seqNumber != totalPackets);
+
+    newFile.close();
+
+    //TODO UPLOAD USER !!!
 }

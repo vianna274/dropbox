@@ -30,6 +30,7 @@ namespace Dropbox
         public:
             User(string username, string dirPath);
             string getUsername();
+            string getDirPath();
             int getNumDevicesConnected();
             void addDevice(WrapperSocket *socket);
             void closeDeviceSession(WrapperSocket *socket);

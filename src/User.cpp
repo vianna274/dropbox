@@ -16,21 +16,25 @@ void User::createUserDir(){
 }
 
 string User::getUsername(){
-    return username;
+    return this->username;
+}
+
+string User::getDirPath(){
+    return this->dirPath;
 }
 
 int User::getNumDevicesConnected(){
-    return devices.size();
+    return this->devices.size();
 }
 
 void User::addDevice(WrapperSocket *socket){
-    devices.push_back(socket);
+    this->devices.push_back(socket);
 }
 
 void User::closeDeviceSession(WrapperSocket *socket){
-    for(auto it = devices.begin(); it != devices.end(); it++){
+    for(auto it = this->devices.begin(); it != this->devices.end(); it++){
         if(*it == socket){
-            devices.erase(it);
+            this->devices.erase(it);
             break;
         }
     }
