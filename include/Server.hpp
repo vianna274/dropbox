@@ -46,7 +46,7 @@ class Server
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
 
-    vector<FileRecord> getServerFileStatus(User *user);
+    vector<FileRecord> getServerFileList(User *user);
     void initializePorts();
     void setPortAvailable(int port);
     void initializeUsers();
@@ -55,7 +55,9 @@ class Server
     void connectNewClient();
     User* getUser(string username);
 
+    void exitUser(WrapperSocket *socket, User *user);
     void receiveUpload(string filename, WrapperSocket *socket, User *user);
+    void sendFileList(WrapperSocket *socket, User *user);
 };
 
 }

@@ -97,14 +97,14 @@ void Client::del(string filePath){
 }
 
 void Client::list_server(){
-	cout << "listing servers " << "\n";
-
+	cout << "Files on server:" << endl;
 	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
 	MessageData *unconvertedFiles;
 	FileRecord record;
 	socket->send(&packet);
 	do {
 		unconvertedFiles = socket->receive(TIMEOUT_OFF);
+		if(unconvertedFiles->type == TYPE_NOTHING_TO_SEND) break;
 		record = *((FileRecord*)unconvertedFiles->payload);
 		cout << setw(10);
 		cout << record.filename << " 	type: " << record.type << " 	last modified: " << record.date << endl;

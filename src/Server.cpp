@@ -5,7 +5,6 @@ using namespace Dropbox;
 
 Server::Server() : connectClientSocket(SERVER_PORT)
 {
-    cout << to_string(sizeof(FileRecord)) << endl;
     initializeUsers();
     initializePorts();
 
@@ -58,7 +57,7 @@ int Server::getAvailablePort()
     return -1;
 }
 
-vector<FileRecord> Server::getServerFileStatus(User *user)
+vector<FileRecord> Server::getServerFileList(User *user)
 {
     vector<FileRecord> files;
     struct stat filestatus;
@@ -107,8 +106,6 @@ void Server::connectNewClient()
             return;
         }
 
-        vector<FileRecord> tmp = getServerFileStatus(user);
-
         int newPort = getAvailablePort();
         MessageData packet = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, to_string(newPort).c_str());
 	    WrapperSocket *socket = new WrapperSocket(newPort);
@@ -139,15 +136,7 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
             case TYPE_DATA:
                 break;
             case TYPE_LIST_SERVER:{
-                vector<FileRecord> files = getServerFileStatus(user);
-                int seq = 0;
-                for(FileRecord record : files) {
-                    MessageData packet = make_packet(TYPE_DATA, seq, files.size()-1, sizeof(FileRecord), (char*)&record);
-                    //FileRecord test = *((FileRecord*)(packet.payload));
-                    //cout << test.filename << endl;
-                    socket->send(&packet);
-                    seq++;
-                }
+                sendFileList(socket, user);
                 break;
             }
             case TYPE_SEND_FILE:
@@ -155,11 +144,8 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
                 break;
 
             case EXIT:
-                int port = socket->getPortInt();
-                user->closeDeviceSession(socket);
-                setPortAvailable(port);
+                exitUser(socket, user);
                 exit = true;
-                cout << "User " + user->getUsername() + " ended session on device on port " << port << endl;
                 break;
         }
 	}
@@ -169,6 +155,13 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 
 void Server::setPortAvailable(int port){
     this->portsAvailable[port - FIRST_PORT] = true;
+}
+
+void Server::exitUser(WrapperSocket *socket, User *user){
+    int port = socket->getPortInt();
+    user->closeDeviceSession(socket);
+    setPortAvailable(port);
+    cout << "User " + user->getUsername() + " ended session on device on port " << port << endl;
 }
 
 void Server::receiveUpload(string filename, WrapperSocket *socket, User *user){
@@ -185,11 +178,24 @@ void Server::receiveUpload(string filename, WrapperSocket *socket, User *user){
         MessageData *packet = socket->receive(TIMEOUT_OFF);
         seqNumber = packet->seq;
         totalPackets = packet->totalSize;
-        cout << "i-"<< seqNumber << " t-"<<totalPackets << " l-" <<packet->len << endl;
         newFile.write(packet->payload, packet->len);
     }while(seqNumber != totalPackets);
-
+    
+    cout << "Received file " << filename << " from user " << user->getUsername() << "." << endl;
     newFile.close();
+}
 
-    //TODO UPLOAD USER !!!
+void Server::sendFileList(WrapperSocket *socket, User *user){
+    vector<FileRecord> files = getServerFileList(user);
+    if(files.empty()){
+        MessageData packet = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "nothing_to_send");
+        socket->send(&packet);
+        return;
+    }
+    int seq = 1;
+    for(FileRecord record : files) {
+        MessageData packet = make_packet(TYPE_DATA, seq, files.size(), sizeof(FileRecord), (char*)&record);
+        socket->send(&packet);
+        seq++;
+    }
 }
