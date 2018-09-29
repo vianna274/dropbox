@@ -44,6 +44,7 @@ namespace Dropbox
             void exit();
             void triggerNotifications();
             Dropbox::WrapperSocket * getSocket() { return socket; }
+            string getSyncDirPath() { return syncDirPath; }
     };
 }
 

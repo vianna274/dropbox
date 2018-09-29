@@ -65,6 +65,7 @@ void Client::list_client(){
 }
 
 void Client::get_sync_dir(){
+	this->createSyncDir();
 	cout << "getting sync dir" << "\n";
 }
 

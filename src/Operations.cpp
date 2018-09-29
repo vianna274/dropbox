@@ -77,7 +77,7 @@ void Operations::sendUpload(WrapperSocket * socket, string filePath){
 	file.close();
 }
 
-void Operations::receiveFileList(WrapperSocket * socket){
+void Operations::receiveFileList(WrapperSocket * socket) {
 	cout << "Files on server:" << endl;
 	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
 	MessageData *unconvertedFiles;
@@ -90,4 +90,39 @@ void Operations::receiveFileList(WrapperSocket * socket){
 		cout << setw(10);
 		cout << record.filename << " 	type: " << record.type << " 	last modified: " << record.date << endl;
 	} while(unconvertedFiles->seq != unconvertedFiles->totalSize);
+}
+
+void Operations::receiveUploadAll(WrapperSocket * socket, string dirPath) {
+	MessageData request = make_packet(TYPE_REQUEST_UPLOAD_ALL, 1, 1, -1, "nothing_to_send");
+	socket->send(&request);
+	MessageData *packet = socket->receive(TIMEOUT_OFF);
+	if (packet->type != TYPE_SEND_UPLOAD_ALL) 
+		return;
+	while(1) {
+		packet = socket->receive(TIMEOUT_OFF);
+		if (packet->type == TYPE_SEND_UPLOAD_ALL_DONE)
+			break;
+		this->receiveUpload(socket, string(packet->payload), dirPath + '/');
+	}
+}
+
+void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<FileRecord> files) {
+	if(files.empty()){
+		this->sendNothing(socket);
+        return;
+    }
+	MessageData packet = make_packet(TYPE_SEND_UPLOAD_ALL, 1, 1, -1, "nothing_to_send");
+	socket->send(&packet);
+    int seq = 1;
+    for(FileRecord record : files) {
+		this->sendUpload(socket, dirPath + '/' + record.filename);
+        seq++;
+    }
+	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "nothing_to_send");
+	socket->send(&packet);
+}
+
+void Operations::sendNothing(WrapperSocket * socket) {
+	MessageData packet = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "nothing_to_send");
+	socket->send(&packet);
 }

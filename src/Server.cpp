@@ -141,6 +141,9 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
             case TYPE_SEND_FILE:
                 receiveUpload(socket, string(data->payload), user->getDirPath());
                 break;
+            case TYPE_REQUEST_UPLOAD_ALL:
+                sendUploadAll(socket, user->getDirPath(), getServerFileList(user));
+                break;
             case EXIT:
                 exitUser(socket, user);
                 exit = true;

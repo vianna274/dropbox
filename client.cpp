@@ -66,7 +66,10 @@ int main(int argc, char *argv[])
 
 			}else if (command == "GET_SYNC_DIR"){
 				if(arguments.size() != 1) puts("Wrong size of command -- get_sync_dir");
-				else client.get_sync_dir();
+				else { 
+					client.get_sync_dir();
+					client.receiveUploadAll(client.getSocket(), client.getSyncDirPath());
+				}
 
 			}else if(command == "EXIT"){
 				if(arguments.size() != 1) puts("Wrong size of command -- exit");
