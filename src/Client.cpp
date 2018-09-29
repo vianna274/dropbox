@@ -40,42 +40,6 @@ Client::~Client(){
 	delete this->socket;
 }
 
-void Client::upload(string filePath){
-
-	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
-	struct stat buffer;   
-  	if(stat(filePath.c_str(), &buffer) != 0){
-		  cout << "Failed to upload: File " << filePath << " does not exist." << endl;
-		  return;
-	}
-	MessageData packet = make_packet(TYPE_SEND_FILE, 1, 1, -1, filename.c_str());
-	this->socket->send(&packet);
-
-	ifstream file;
-	file.open(filePath, ifstream::in | ifstream::binary);
-	file.seekg(0, file.end);
-	int fileSize = file.tellg();
-	file.seekg(0, file.beg);
-	int totalPackets = 1 + ((fileSize - 1) / MESSAGE_LEN); // ceil(x/y)
-	int lastPacketSize = fileSize % MESSAGE_LEN;
-	int packetsSent = 0;
-	int filePointer = 0;
-	int packetSize = MESSAGE_LEN;
-	char payload[MESSAGE_LEN];
-	cout << "Uploading " << filePath << " Size: " << fileSize << " NumPackets: " << totalPackets << endl;
-	while(packetsSent < totalPackets){
-		file.seekg(filePointer, file.beg);
-		filePointer += MESSAGE_LEN;
-		if(packetsSent == totalPackets - 1) packetSize = lastPacketSize;
-		file.read(payload, packetSize);
-		MessageData packet = make_packet(TYPE_DATA, packetsSent + 1, totalPackets, packetSize, payload);
-		this->socket->send(&packet);
-
-		packetsSent++;
-	}
-	file.close();
-}
-
 void Client::uploadAll(string filePath){
 	cout << "uploading ALL : " << filePath << "\n";
 }
@@ -94,21 +58,6 @@ void Client::updateAll(string filePath){
 
 void Client::del(string filePath){
 	cout << "deleting : " << filePath << "\n";
-}
-
-void Client::list_server(){
-	cout << "Files on server:" << endl;
-	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
-	MessageData *unconvertedFiles;
-	FileRecord record;
-	socket->send(&packet);
-	do {
-		unconvertedFiles = socket->receive(TIMEOUT_OFF);
-		if(unconvertedFiles->type == TYPE_NOTHING_TO_SEND) break;
-		record = *((FileRecord*)unconvertedFiles->payload);
-		cout << setw(10);
-		cout << record.filename << " 	type: " << record.type << " 	last modified: " << record.date << endl;
-	} while(unconvertedFiles->seq != unconvertedFiles->totalSize);
 }
 
 void Client::list_client(){

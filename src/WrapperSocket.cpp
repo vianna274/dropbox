@@ -62,6 +62,7 @@ bool WrapperSocket::waitAck(int seq) {
       return true;
     }
   }
+  return false;
 }
 
 MessageData* WrapperSocket::receive(int timeout) {
@@ -81,7 +82,6 @@ MessageData* WrapperSocket::receive(int timeout) {
 
   char* msg = new char[PACKET_LEN];
   memset(msg, 0, PACKET_LEN);
-	socklen_t sockAddressSize = sizeof(struct sockaddr);
 
   int msgSize = recvfrom(this->localSocketHandler, (void *) msg, 
     PACKET_LEN, 0, (struct sockaddr *) &this->remoteSocketAddr, &this->remoteSocketLen);

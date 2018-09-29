@@ -135,14 +135,12 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
         switch(data->type){
             case TYPE_DATA:
                 break;
-            case TYPE_LIST_SERVER:{
-                sendFileList(socket, user);
+            case TYPE_LIST_SERVER:
+                sendFileList(socket, user->getDirPath(), getServerFileList(user));
                 break;
-            }
             case TYPE_SEND_FILE:
-                receiveUpload(string(data->payload), socket, user);
+                receiveUpload(socket, string(data->payload), user->getDirPath());
                 break;
-
             case EXIT:
                 exitUser(socket, user);
                 exit = true;
@@ -162,40 +160,4 @@ void Server::exitUser(WrapperSocket *socket, User *user){
     user->closeDeviceSession(socket);
     setPortAvailable(port);
     cout << "User " + user->getUsername() + " ended session on device on port " << port << endl;
-}
-
-void Server::receiveUpload(string filename, WrapperSocket *socket, User *user){
-    string filePath = user->getDirPath() + filename;
-
-    ofstream newFile;
-	newFile.open(filePath, ofstream::trunc | ofstream::binary);
-	if(!newFile.is_open()) {
-		cout << "Erro ao receber arquivo " << filePath << ". Não foi possível criar cópia local." << endl;
-		return;
-    }
-    int seqNumber, totalPackets;
-    do{
-        MessageData *packet = socket->receive(TIMEOUT_OFF);
-        seqNumber = packet->seq;
-        totalPackets = packet->totalSize;
-        newFile.write(packet->payload, packet->len);
-    }while(seqNumber != totalPackets);
-    
-    cout << "Received file " << filename << " from user " << user->getUsername() << "." << endl;
-    newFile.close();
-}
-
-void Server::sendFileList(WrapperSocket *socket, User *user){
-    vector<FileRecord> files = getServerFileList(user);
-    if(files.empty()){
-        MessageData packet = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "nothing_to_send");
-        socket->send(&packet);
-        return;
-    }
-    int seq = 1;
-    for(FileRecord record : files) {
-        MessageData packet = make_packet(TYPE_DATA, seq, files.size(), sizeof(FileRecord), (char*)&record);
-        socket->send(&packet);
-        seq++;
-    }
 }

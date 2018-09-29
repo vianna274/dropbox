@@ -26,12 +26,13 @@
 #include "WrapperSocket.hpp"
 #include "User.hpp"
 #include "FileRecord.hpp"
+#include "Operations.hpp"
 
 using namespace std;
 
 namespace Dropbox {
 
-class Server
+class Server : public Operations
 {
   public:
     Server();
@@ -56,8 +57,6 @@ class Server
     User* getUser(string username);
 
     void exitUser(WrapperSocket *socket, User *user);
-    void receiveUpload(string filename, WrapperSocket *socket, User *user);
-    void sendFileList(WrapperSocket *socket, User *user);
 };
 
 }

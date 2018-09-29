@@ -11,15 +11,17 @@
 #include <utime.h>
 #include <dirent.h>
 #include <iomanip>
+
 #include "WrapperSocket.hpp"
 #include "MessageData.hpp"
 #include "constants.hpp"
 #include "FileRecord.hpp"
+#include "Operations.hpp"
 
 
 namespace Dropbox
 {
-    class Client
+    class Client : public Operations
     {
 
         private:
@@ -32,17 +34,16 @@ namespace Dropbox
             Client(string username, string serverAddr, int serverDistributorPort);
             ~Client();
 
-            void upload(string filePath);
             void uploadAll(string filePath);
             void download(string filePath);
             void downloadAll(string filePath);
             void updateAll(string filePath);
             void del(string filePath);
-            void list_server();
             void list_client();
             void get_sync_dir();
             void exit();
             void triggerNotifications();
+            Dropbox::WrapperSocket * getSocket() { return socket; }
     };
 }
 

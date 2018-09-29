@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 			boost::to_upper(command);
 			if (command == "UPLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- upload <file path>");
-				else client.upload(arguments[1]);
+				else client.sendUpload(client.getSocket(), arguments[1]);
 
 			}else if (command == "DOWNLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- download <file path>");
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
 			}else if (command == "LIST_SERVER"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_server");
-				else client.list_server();
+				else client.receiveFileList(client.getSocket());
 
 			}else if (command == "LIST_CLIENT"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_client");
