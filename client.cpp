@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 				}
 			}else if (command == "DELETE"){
 				if(arguments.size() != 2) puts("Wrong size of command -- delete <file path>");
-				else client.download(arguments[1]);
+				else client.sendDeleteFile(client.getSocket(), arguments[1]);
 
 			}else if (command == "LIST_SERVER"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_server");
@@ -69,7 +69,6 @@ int main(int argc, char *argv[])
 				if(arguments.size() != 1) puts("Wrong size of command -- get_sync_dir");
 				else { 
 					client.get_sync_dir();
-					client.receiveUploadAll(client.getSocket(), client.getSyncDirPath());
 				}
 
 			}else if(command == "EXIT"){
@@ -78,7 +77,7 @@ int main(int argc, char *argv[])
 				endSession = true;
 
 			} else {
-				puts("unidentified command!");
+				puts("Unidentified command!");
 			}
 		}
 	}

@@ -19,7 +19,7 @@ void Operations::sendFileList(WrapperSocket *socket, string dirPath, vector<File
     }
 }
 
-void Operations::receiveUpload(WrapperSocket * socket, string filename, string dirPath) {
+void Operations::receiveUpload(WrapperSocket *socket, string filename, string dirPath) {
     string filePath = dirPath + filename;
 
     ofstream newFile;
@@ -40,13 +40,15 @@ void Operations::receiveUpload(WrapperSocket * socket, string filename, string d
     newFile.close();
 }
 
-void Operations::sendUpload(WrapperSocket * socket, string filePath){
+void Operations::sendUpload(WrapperSocket *socket, string filePath){
 
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
 	cout << "path: " << filePath << "     name : " << filename << endl;
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
 		  cout << "Failed to upload: File " << filePath << " does not exist." << endl;
+		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "");
+		  socket->send(&failed);
 		  return;
 	}
 	MessageData packet = make_packet(TYPE_SEND_FILE, 1, 1, -1, filename.c_str());
@@ -121,7 +123,6 @@ void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<Fi
 	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "nothing_to_send");
 	socket->send(&packet);
 
-
 }
 
 void Operations::sendNothing(WrapperSocket * socket) {
@@ -129,7 +130,15 @@ void Operations::sendNothing(WrapperSocket * socket) {
 	socket->send(&packet);
 }
 
-void Operations::sendDownloadFile(WrapperSocket * socket, string filePath){
-	MessageData packet = make_packet(TYPE_REQUEST_DOWNLOAD, 1, 1, -1, filePath.c_str());
-	socket->send(&packet);
+void Operations::sendDeleteFile(WrapperSocket * socket, string filename){
+	MessageData request = make_packet(TYPE_DELETE, 1, 1, -1, filename.c_str());
+	socket->send(&request);
+}
+
+void Operations::receiveDeleteFile(WrapperSocket *socket, string filename, string dirPath){
+  string fullpath = dirPath + filename;
+  if( remove(fullpath.c_str()) != 0 )
+    cout << "Error deleting file." << endl;
+  else
+    cout << "File " << filename << " deleted from server." << endl;
 }

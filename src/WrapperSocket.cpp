@@ -98,7 +98,6 @@ MessageData* WrapperSocket::receive(int timeout) {
     MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
     //printf("Sending a ACK\n");
     this->sendAck(&message);
-    cout << "ackkkkk" << endl;
     
   }
   // TODO delete msg

@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <utime.h>
+#include <mutex>
 #include <dirent.h>
 #include "WrapperSocket.hpp"
 #include "MessageData.hpp"
@@ -24,6 +25,7 @@ namespace Dropbox
             string dirPath;
             vector<int> files; //CRIAR TIPO FILE
             vector<WrapperSocket*> devices;
+            mutex mt;
 
             void createUserDir();
 
@@ -34,6 +36,8 @@ namespace Dropbox
             int getNumDevicesConnected();
             void addDevice(WrapperSocket *socket);
             void closeDeviceSession(WrapperSocket *socket);
+            void lockDevices() { this->mt.lock(); };
+            void unlockDevices() { this->mt.unlock(); };
     };
 }
 

@@ -132,11 +132,15 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
     bool exit = false;
 	while(!exit){
 		MessageData *data = socket->receive(TIMEOUT_OFF);
+        user->lockDevices();
         switch(data->type){
             case TYPE_DATA:
                 break;
             case TYPE_REQUEST_DOWNLOAD:
-                sendUpload(socket, this->rootDir + user->getUsername() + "/" + data->payload);
+                sendUpload(socket, this->rootDir + user->getUsername() + "/" + string(data->payload));
+                break;
+            case TYPE_DELETE:
+                receiveDeleteFile(socket, string(data->payload), user->getDirPath());
                 break;
             case TYPE_LIST_SERVER:
                 sendFileList(socket, user->getDirPath(), getServerFileList(user));
@@ -152,6 +156,7 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
                 exit = true;
                 break;
         }
+        user->unlockDevices();
 	}
 
     delete socket;

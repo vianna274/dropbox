@@ -35,10 +35,9 @@ namespace Dropbox
             ~Client();
 
             void uploadAll(string filePath);
-            void download(string filePath);
+            void download(string filename);
             void downloadAll(string filePath);
             void updateAll(string filePath);
-            void del(string filePath);
             void list_client();
             void get_sync_dir();
             void exit();

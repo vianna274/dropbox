@@ -9,9 +9,6 @@ using namespace Dropbox;
 
 Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), syncDirPath("/tmp/sync_dir_"+username)
 {
-
-	createSyncDir();
-
 	WrapperSocket socketToGetPort(serverAddr, serverDistributorPort);
 
 	MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, username.c_str());
@@ -25,6 +22,8 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 		cout << newPort->payload << endl;
 		std::exit(1);
 	}
+
+	get_sync_dir();
 
 	cout << "Connected Successfully." << endl;
 }
@@ -45,13 +44,23 @@ void Client::uploadAll(string filePath){
 	cout << "uploading ALL : " << filePath << "\n";
 }
 
-void Client::download(string filePath){
-	cout << "downloading : " << filePath << "\n";
-	this->sendDownloadFile(this->socket, filePath);
+void Client::download(string filename){
+
+	MessageData request = make_packet(TYPE_REQUEST_DOWNLOAD, 1 , 1, -1, filename.c_str());
+	this->socket->send(&request);
+
 	char cCurrentPath[FILENAME_MAX];
-	if (!getcwd(cCurrentPath, sizeof(cCurrentPath))) cout << "ERROR GETTING THE CURRENT DIRECTORY!!" << endl;
+	if (!getcwd(cCurrentPath, sizeof(cCurrentPath))) 
+		cout << "ERROR GETTING THE CURRENT DIRECTORY!!" << endl;
 	cCurrentPath[sizeof(cCurrentPath) - 1] = '\0';
-	this->receiveUpload(this->socket, filePath, string(cCurrentPath));
+	string currentPath(cCurrentPath);
+	currentPath += "/";
+
+	MessageData *data = this->socket->receive(TIMEOUT_OFF);
+	if(data->type == TYPE_SEND_FILE)
+		this->receiveUpload(this->socket, filename, currentPath);
+	else if(data->type == TYPE_NOTHING_TO_SEND)
+		cout << "File does not exist." << endl;
 }
 
 void Client::downloadAll(string filePath){
@@ -62,17 +71,14 @@ void Client::updateAll(string filePath){
 	cout << "updating ALL : " << filePath << "\n";
 }
 
-void Client::del(string filePath){
-	cout << "deleting : " << filePath << "\n";
-}
-
 void Client::list_client(){
 	cout << "listing clients" << "\n";
 }
 
 void Client::get_sync_dir(){
 	this->createSyncDir();
-	cout << "getting sync dir" << "\n";
+	this->receiveUploadAll(this->socket, this->syncDirPath);
+	cout << "Getting sync dir" << endl;
 }
 
 void Client::exit(){
