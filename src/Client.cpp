@@ -46,6 +46,8 @@ void Client::uploadAll(string filePath){
 
 void Client::download(string filePath){
 	cout << "downloading : " << filePath << "\n";
+	this->sendDownloadFile(this->socket, filePath);
+	this->receiveUpload(this->socket, filePath, this->getSyncDirPath());
 }
 
 void Client::downloadAll(string filePath){

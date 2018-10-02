@@ -135,6 +135,9 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
         switch(data->type){
             case TYPE_DATA:
                 break;
+            case TYPE_REQUEST_DOWNLOAD:
+                sendUpload(socket, data->payload);
+                break;
             case TYPE_LIST_SERVER:
                 sendFileList(socket, user->getDirPath(), getServerFileList(user));
                 break;

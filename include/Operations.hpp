@@ -24,6 +24,7 @@ class Operations
     void sendDeleteDir(WrapperSocket * socket, string dirPath);
     void sendUpdateFile(WrapperSocket * socket, string filePath);
     void sendUploadAll(WrapperSocket * socket, string dirPath, vector<FileRecord> files);
+    void sendDownloadFile(WrapperSocket * socket, string filePath);
 
     void receiveUpload(WrapperSocket * socket, string filename, string dirPath);
     void receiveFileList(WrapperSocket * socket);

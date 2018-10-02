@@ -120,9 +120,16 @@ void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<Fi
     }
 	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "nothing_to_send");
 	socket->send(&packet);
+
+
 }
 
 void Operations::sendNothing(WrapperSocket * socket) {
 	MessageData packet = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "nothing_to_send");
+	socket->send(&packet);
+}
+
+void Operations::sendDownloadFile(WrapperSocket * socket, string filePath){
+	MessageData packet = make_packet(TYPE_REQUEST_DOWNLOAD, 1, 1, -1, "requesting download!");
 	socket->send(&packet);
 }

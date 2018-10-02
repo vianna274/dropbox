@@ -50,8 +50,9 @@ int main(int argc, char *argv[])
 
 			}else if (command == "DOWNLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- download <file path>");
-				else client.download(arguments[1]);
-
+				else {
+					client.download(arguments[1]);
+				}
 			}else if (command == "DELETE"){
 				if(arguments.size() != 2) puts("Wrong size of command -- delete <file path>");
 				else client.download(arguments[1]);
