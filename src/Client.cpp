@@ -1,6 +1,7 @@
 #include "../include/Client.hpp"
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
 
 using namespace std;
 using namespace Dropbox;
@@ -47,7 +48,10 @@ void Client::uploadAll(string filePath){
 void Client::download(string filePath){
 	cout << "downloading : " << filePath << "\n";
 	this->sendDownloadFile(this->socket, filePath);
-	this->receiveUpload(this->socket, filePath, this->getSyncDirPath());
+	char cCurrentPath[FILENAME_MAX];
+	if (!getcwd(cCurrentPath, sizeof(cCurrentPath))) cout << "ERROR GETTING THE CURRENT DIRECTORY!!" << endl;
+	cCurrentPath[sizeof(cCurrentPath) - 1] = '\0';
+	this->receiveUpload(this->socket, filePath, string(cCurrentPath));
 }
 
 void Client::downloadAll(string filePath){

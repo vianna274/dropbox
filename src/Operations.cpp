@@ -43,6 +43,7 @@ void Operations::receiveUpload(WrapperSocket * socket, string filename, string d
 void Operations::sendUpload(WrapperSocket * socket, string filePath){
 
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
+	cout << "path: " << filePath << "     name : " << filename << endl;
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
 		  cout << "Failed to upload: File " << filePath << " does not exist." << endl;
@@ -71,7 +72,6 @@ void Operations::sendUpload(WrapperSocket * socket, string filePath){
 		file.read(payload, packetSize);
 		MessageData packet = make_packet(TYPE_DATA, packetsSent + 1, totalPackets, packetSize, payload);
 		socket->send(&packet);
-
 		packetsSent++;
 	}
 	file.close();
@@ -130,6 +130,6 @@ void Operations::sendNothing(WrapperSocket * socket) {
 }
 
 void Operations::sendDownloadFile(WrapperSocket * socket, string filePath){
-	MessageData packet = make_packet(TYPE_REQUEST_DOWNLOAD, 1, 1, -1, "requesting download!");
+	MessageData packet = make_packet(TYPE_REQUEST_DOWNLOAD, 1, 1, -1, filePath.c_str());
 	socket->send(&packet);
 }
