@@ -116,6 +116,7 @@ void Client::requestServerFileList() {
 	this->mtx.lock();
 	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
 	socket->send(&packet);
-	this->receiveFileList(this->getSocket());
+	vector<FileRecord> files = this->receiveFileList(this->getSocket());
+	this->printFileList(files);
 	this->mtx.unlock();
 }

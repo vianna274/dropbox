@@ -4,6 +4,8 @@
 #include <fstream>
 #include <stdio.h>
 #include <dirent.h>
+#include <stdlib.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <iomanip>
 
@@ -31,6 +33,7 @@ class Operations
 
     void receiveFile(WrapperSocket * socket, string filename, string dirPath);
     vector<FileRecord> receiveFileList(WrapperSocket * socket);
+    void printFileList(vector<FileRecord> fileRecords);
     void receiveUploadAll(WrapperSocket * socket, string dirPath);
 };
 }

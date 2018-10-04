@@ -15,7 +15,7 @@ vector<FileRecord> Operations::getFileList(string dirPath) {
     if ((dir = opendir (dirPath.c_str())) != NULL) {
         while ((ent = readdir (dir)) != NULL) {
             if(ent->d_type == 0x8) {
-                stat((dirPath + ent->d_name).c_str(), &filestatus);
+				stat((dirPath + ent->d_name).c_str(), &filestatus);
                 FileRecord fileRecord = make_record(ent->d_name, filestatus.st_ctim.tv_sec, filestatus.st_atim.tv_sec, filestatus.st_mtim.tv_sec, filestatus.st_size);
 				files.push_back(fileRecord);
             }
@@ -107,11 +107,16 @@ vector<FileRecord> Operations::receiveFileList(WrapperSocket * socket) {
 		unconvertedFiles = socket->receive(TIMEOUT_OFF);
 		if(unconvertedFiles->type == TYPE_NOTHING_TO_SEND) break;
 		record = *((FileRecord*)unconvertedFiles->payload);
-		cout << setw(10);
-		cout << record.filename << "       creation time" << ctime(&record.creationTime) << " 	   last modified: " << ctime(&record.modificationTime) << "        last accessed: " << ctime(&record.accessTime)<< endl;
 		files.push_back(record);
 	} while(unconvertedFiles->seq != unconvertedFiles->totalSize);
 	return files;
+}
+
+void Operations::printFileList(vector<FileRecord> fileRecords) {
+	for(FileRecord record : fileRecords) {
+		cout << setw(10);
+		cout << record.filename << "       creation time : " << ctime(&record.creationTime) << " 	   last modified: " << ctime(&record.modificationTime) << "          last accessed: " << ctime(&record.accessTime)<< endl;
+	}
 }
 
 void Operations::receiveUploadAll(WrapperSocket * socket, string dirPath) {
