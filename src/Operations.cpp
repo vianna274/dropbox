@@ -16,9 +16,8 @@ vector<FileRecord> Operations::getFileList(string dirPath) {
         while ((ent = readdir (dir)) != NULL) {
             if(ent->d_type == 0x8) {
                 stat((dirPath + ent->d_name).c_str(), &filestatus);
-                extension = string(ent->d_name).substr(string(ent->d_name).find_last_of(".") + 1);
-                FileRecord fileRecord = make_record(ent->d_name, extension.c_str(), ctime(&(filestatus.st_mtim.tv_sec)), filestatus.st_size);
-                files.push_back(fileRecord);
+                FileRecord fileRecord = make_record(ent->d_name, filestatus.st_ctim.tv_sec, filestatus.st_atim.tv_sec, filestatus.st_mtim.tv_sec, filestatus.st_size);
+				files.push_back(fileRecord);
             }
         }
         closedir(dir);
@@ -109,7 +108,7 @@ vector<FileRecord> Operations::receiveFileList(WrapperSocket * socket) {
 		if(unconvertedFiles->type == TYPE_NOTHING_TO_SEND) break;
 		record = *((FileRecord*)unconvertedFiles->payload);
 		cout << setw(10);
-		cout << record.filename << " 	type: " << record.type << " 	last modified: " << record.date << endl;
+		cout << record.filename << "       creation time" << ctime(&record.creationTime) << " 	   last modified: " << ctime(&record.modificationTime) << "        last accessed: " << ctime(&record.accessTime)<< endl;
 		files.push_back(record);
 	} while(unconvertedFiles->seq != unconvertedFiles->totalSize);
 	return files;
@@ -135,7 +134,6 @@ void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<Fi
     int seq = 1;
     for(FileRecord record : files) {
 		this->sendFile(socket, dirPath + record.filename);
-		cout << "AQUI" << dirPath + record.filename << endl;
         seq++;
     }
 	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "send_upload_all_done");

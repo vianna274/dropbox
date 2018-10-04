@@ -116,7 +116,7 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
                 sendFile(socket, user->getDirPath() + string(data->payload));
                 break;
             case TYPE_DELETE:
-                deleteFile(string(data->payload) + user->getDirPath());
+                deleteFile(user->getDirPath() + string(data->payload));
                 break;
             case TYPE_LIST_SERVER:
                 sendFileList(socket, user->getDirPath(), getFileList(user->getDirPath()));
@@ -144,6 +144,9 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 
 void Server::receiveAskUpdate(WrapperSocket * socket, User * user) {
     vector<FileRecord> clientFiles = this->receiveFileList(socket);
+
+    
+
     this->sendDeleteAll(socket);
     this->sendUploadAll(socket, user->getDirPath(), this->getFileList(user->getDirPath()));
     MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, -1, "request_update_done");
