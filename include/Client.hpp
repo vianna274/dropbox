@@ -11,6 +11,8 @@
 #include <utime.h>
 #include <dirent.h>
 #include <iomanip>
+#include <thread>
+#include <mutex>
 
 #include "WrapperSocket.hpp"
 #include "MessageData.hpp"
@@ -28,12 +30,13 @@ namespace Dropbox
             string username;
             Dropbox::WrapperSocket *socket;
             string syncDirPath;
-
+            mutex mtx;
+            void askServerUpdates();
             void createSyncDir();
         public:
             Client(string username, string serverAddr, int serverDistributorPort);
             ~Client();
-
+            void askUpdate();
             void uploadAll(string filePath);
             void download(string filename);
             void downloadAll(string filePath);
@@ -42,6 +45,7 @@ namespace Dropbox
             void get_sync_dir();
             void exit();
             void triggerNotifications();
+            void requestServerFileList();
             Dropbox::WrapperSocket * getSocket() { return socket; }
             string getSyncDirPath() { return syncDirPath; }
     };

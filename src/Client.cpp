@@ -1,4 +1,5 @@
 #include "../include/Client.hpp"
+#include "../include/MessageData.hpp"
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
@@ -7,7 +8,7 @@ using namespace std;
 using namespace Dropbox;
 
 
-Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), syncDirPath("/tmp/sync_dir_"+username)
+Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), syncDirPath("/tmp/sync_dir_"+username+"/")
 {
 	WrapperSocket socketToGetPort(serverAddr, serverDistributorPort);
 
@@ -24,8 +25,18 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 	}
 
 	get_sync_dir();
-
+	thread askServerUpdatesThread(&Client::askServerUpdates, this);
+	askServerUpdatesThread.detach();
 	cout << "Connected Successfully." << endl;
+}
+
+void Client::askServerUpdates() {
+	while(1) {
+		this->mtx.lock();
+		this->askUpdate();
+		this->mtx.unlock();
+		this_thread::sleep_for(chrono::milliseconds(5000));
+	}
 }
 
 void Client::createSyncDir(){
@@ -40,12 +51,30 @@ Client::~Client(){
 	delete this->socket;
 }
 
-void Client::uploadAll(string filePath){
-	cout << "uploading ALL : " << filePath << "\n";
+void Client::askUpdate() {
+	MessageData request = make_packet(TYPE_REQUEST_UPDATE, 1 , 1, -1, "type_request_update");
+	this->socket->send(&request);
+	this->sendFileList(this->socket, this->getSyncDirPath(), this->getFileList(this->getSyncDirPath()));
+	while(1) {
+		MessageData * response = this->socket->receive(TIMEOUT_OFF);
+		switch (response->type) {
+			case TYPE_NOTHING_TO_SEND:
+			case TYPE_REQUEST_UPDATE_DONE:
+				return;
+			case TYPE_SEND_UPLOAD_ALL:
+				this->receiveUploadAll(this->socket, this->getSyncDirPath());
+				break;
+			case TYPE_DELETE_ALL:
+				this->deleteAll(this->getFileList(this->getSyncDirPath()), this->getSyncDirPath());
+				break;
+			default:
+				cout << "Received " + to_string(response->type) << endl;
+		}
+	}
 }
 
 void Client::download(string filename){
-
+	this->mtx.lock();
 	MessageData request = make_packet(TYPE_REQUEST_DOWNLOAD, 1 , 1, -1, filename.c_str());
 	this->socket->send(&request);
 
@@ -61,14 +90,7 @@ void Client::download(string filename){
 		this->receiveUpload(this->socket, filename, currentPath);
 	else if(data->type == TYPE_NOTHING_TO_SEND)
 		cout << "File does not exist." << endl;
-}
-
-void Client::downloadAll(string filePath){
-	cout << "downloading ALL : " << filePath << "\n";
-}
-
-void Client::updateAll(string filePath){
-	cout << "updating ALL : " << filePath << "\n";
+	this->mtx.unlock();
 }
 
 void Client::list_client(){
@@ -77,7 +99,6 @@ void Client::list_client(){
 
 void Client::get_sync_dir(){
 	this->createSyncDir();
-	this->receiveUploadAll(this->socket, this->syncDirPath);
 	cout << "Getting sync dir" << endl;
 }
 
@@ -86,6 +107,14 @@ void Client::exit(){
 	this->socket->send(&message);
 }
 
-void Client::triggerNotifications(){
+void Client::triggerNotifications() {
 	cout << "Triggering notifications" << "\n";
+}
+
+void Client::requestServerFileList() {
+	this->mtx.lock();
+	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
+	socket->send(&packet);
+	this->receiveFileList(this->getSocket());
+	this->mtx.unlock();
 }

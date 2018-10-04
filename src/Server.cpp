@@ -57,28 +57,6 @@ int Server::getAvailablePort()
     return -1;
 }
 
-vector<FileRecord> Server::getServerFileList(User *user)
-{
-    vector<FileRecord> files;
-    struct stat filestatus;
-    string extension;
-    DIR *dir;
-    struct dirent *ent;
-
-    if ((dir = opendir (user->getDirPath().c_str())) != NULL) {
-        while ((ent = readdir (dir)) != NULL) {
-            if(ent->d_type == 0x8) {
-                stat((user->getDirPath() + ent->d_name).c_str(), &filestatus);
-                extension = string(ent->d_name).substr(string(ent->d_name).find_last_of(".") + 1);
-                FileRecord fileRecord = make_record(ent->d_name, extension.c_str(), ctime(&(filestatus.st_mtim.tv_sec)), filestatus.st_size);
-                files.push_back(fileRecord);
-            }
-        }
-        closedir(dir);
-    }
-    return files;
-}
-
 User* Server::getUser(string username)
 {
     for(unsigned i = 0; i < users.size(); i++){
@@ -143,13 +121,16 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
                 receiveDeleteFile(socket, string(data->payload), user->getDirPath());
                 break;
             case TYPE_LIST_SERVER:
-                sendFileList(socket, user->getDirPath(), getServerFileList(user));
+                sendFileList(socket, user->getDirPath(), getFileList(user->getDirPath()));
                 break;
             case TYPE_SEND_FILE:
                 receiveUpload(socket, string(data->payload), user->getDirPath());
                 break;
             case TYPE_REQUEST_UPLOAD_ALL:
-                sendUploadAll(socket, user->getDirPath(), getServerFileList(user));
+                sendUploadAll(socket, user->getDirPath(), getFileList(user->getDirPath()));
+                break;
+            case TYPE_REQUEST_UPDATE:
+                this->receiveAskUpdate(socket, user);
                 break;
             case EXIT:
                 exitUser(socket, user);
@@ -160,6 +141,15 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 	}
 
     delete socket;
+}
+
+
+void Server::receiveAskUpdate(WrapperSocket * socket, User * user) {
+    vector<FileRecord> clientFiles = this->receiveFileList(socket);
+    this->sendDeleteAll(socket);
+    this->sendUploadAll(socket, user->getDirPath(), this->getFileList(user->getDirPath()));
+    MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, -1, "request_update_done");
+	socket->send(&packet);
 }
 
 void Server::setPortAvailable(int port){

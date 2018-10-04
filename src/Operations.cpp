@@ -5,6 +5,27 @@ using namespace Dropbox;
 
 Operations::Operations() {}
 
+vector<FileRecord> Operations::getFileList(string dirPath) {
+    vector<FileRecord> files;
+    struct stat filestatus;
+    string extension;
+    DIR *dir;
+    struct dirent *ent;
+
+    if ((dir = opendir (dirPath.c_str())) != NULL) {
+        while ((ent = readdir (dir)) != NULL) {
+            if(ent->d_type == 0x8) {
+                stat((dirPath + ent->d_name).c_str(), &filestatus);
+                extension = string(ent->d_name).substr(string(ent->d_name).find_last_of(".") + 1);
+                FileRecord fileRecord = make_record(ent->d_name, extension.c_str(), ctime(&(filestatus.st_mtim.tv_sec)), filestatus.st_size);
+                files.push_back(fileRecord);
+            }
+        }
+        closedir(dir);
+    }
+    return files;
+}
+
 void Operations::sendFileList(WrapperSocket *socket, string dirPath, vector<FileRecord> files){
     if(files.empty()){
         MessageData packet = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "nothing_to_send");
@@ -36,7 +57,6 @@ void Operations::receiveUpload(WrapperSocket *socket, string filename, string di
         newFile.write(packet->payload, packet->len);
     }while(seqNumber != totalPackets);
     
-    cout << "Received file " << filename << "." << endl;
     newFile.close();
 }
 
@@ -79,50 +99,46 @@ void Operations::sendUpload(WrapperSocket *socket, string filePath){
 	file.close();
 }
 
-void Operations::receiveFileList(WrapperSocket * socket) {
+vector<FileRecord> Operations::receiveFileList(WrapperSocket * socket) {
 	cout << "Files on server:" << endl;
-	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
 	MessageData *unconvertedFiles;
 	FileRecord record;
-	socket->send(&packet);
+	vector<FileRecord> files;
 	do {
 		unconvertedFiles = socket->receive(TIMEOUT_OFF);
 		if(unconvertedFiles->type == TYPE_NOTHING_TO_SEND) break;
 		record = *((FileRecord*)unconvertedFiles->payload);
 		cout << setw(10);
 		cout << record.filename << " 	type: " << record.type << " 	last modified: " << record.date << endl;
+		files.push_back(record);
 	} while(unconvertedFiles->seq != unconvertedFiles->totalSize);
+	return files;
 }
 
 void Operations::receiveUploadAll(WrapperSocket * socket, string dirPath) {
-	MessageData request = make_packet(TYPE_REQUEST_UPLOAD_ALL, 1, 1, -1, "nothing_to_send");
-	socket->send(&request);
-	MessageData *packet = socket->receive(TIMEOUT_OFF);
-	if (packet->type != TYPE_SEND_UPLOAD_ALL) 
-		return;
 	while(1) {
-		packet = socket->receive(TIMEOUT_OFF);
-		if (packet->type == TYPE_SEND_UPLOAD_ALL_DONE)
+		MessageData * packet = socket->receive(TIMEOUT_OFF);
+		if (packet->type == TYPE_SEND_UPLOAD_ALL_DONE ||
+			packet->type == TYPE_NOTHING_TO_SEND)
 			break;
 		this->receiveUpload(socket, string(packet->payload), dirPath + '/');
 	}
 }
 
 void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<FileRecord> files) {
-	if(files.empty()){
+	if(files.empty()) {
 		this->sendNothing(socket);
         return;
     }
-	MessageData packet = make_packet(TYPE_SEND_UPLOAD_ALL, 1, 1, -1, "nothing_to_send");
+	MessageData packet = make_packet(TYPE_SEND_UPLOAD_ALL, 1, 1, -1, "send_upload_all");
 	socket->send(&packet);
     int seq = 1;
     for(FileRecord record : files) {
 		this->sendUpload(socket, dirPath + '/' + record.filename);
         seq++;
     }
-	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "nothing_to_send");
+	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "send_upload_all_done");
 	socket->send(&packet);
-
 }
 
 void Operations::sendNothing(WrapperSocket * socket) {
@@ -135,10 +151,23 @@ void Operations::sendDeleteFile(WrapperSocket * socket, string filename){
 	socket->send(&request);
 }
 
+void Operations::sendDeleteAll(WrapperSocket * socket) {
+	MessageData packet = make_packet(TYPE_DELETE_ALL, 1, 1, -1, "delete_all");
+	socket->send(&packet);
+}
+
 void Operations::receiveDeleteFile(WrapperSocket *socket, string filename, string dirPath){
   string fullpath = dirPath + filename;
-  if( remove(fullpath.c_str()) != 0 )
-    cout << "Error deleting file." << endl;
-  else
-    cout << "File " << filename << " deleted from server." << endl;
+  this->deleteFile(fullpath);
+}
+
+void Operations::deleteFile(string filepath) {
+	if(remove(filepath.c_str()) != 0 )
+		cout << "Error deleting file: " << filepath << endl;
+}
+
+void Operations::deleteAll(vector<FileRecord> files, string dirPath) {
+	for(FileRecord file : files) {
+		this->deleteFile(dirPath + file.filename);
+	}
 }

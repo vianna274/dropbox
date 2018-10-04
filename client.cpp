@@ -59,7 +59,9 @@ int main(int argc, char *argv[])
 
 			}else if (command == "LIST_SERVER"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_server");
-				else client.receiveFileList(client.getSocket());
+				else {
+					client.requestServerFileList();
+				}
 
 			}else if (command == "LIST_CLIENT"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_client");

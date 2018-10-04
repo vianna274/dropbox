@@ -41,13 +41,12 @@ class Server : public Operations
     mutex connectNewClientMutex;
     mutex portsMutex;
     const string rootDir = "/tmp/DropboxService/";
-
+    void receiveAskUpdate(WrapperSocket * socket, User * user);
   private:
     WrapperSocket connectClientSocket;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
 
-    vector<FileRecord> getServerFileList(User *user);
     void initializePorts();
     void setPortAvailable(int port);
     void initializeUsers();
