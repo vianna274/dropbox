@@ -13,6 +13,7 @@
 #include <dirent.h>
 #include "WrapperSocket.hpp"
 #include "MessageData.hpp"
+#include "FileRecord.hpp"
 #include "constants.hpp"
 
 
@@ -23,7 +24,7 @@ namespace Dropbox
         private:
             string username;
             string dirPath;
-            vector<int> files; //CRIAR TIPO FILE
+            vector<FileRecord> fileRecords;
             vector<WrapperSocket*> devices;
             mutex mt;
 

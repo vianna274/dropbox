@@ -31,6 +31,7 @@ namespace Dropbox
             Dropbox::WrapperSocket *socket;
             string syncDirPath;
             mutex mtx;
+            vector<FileRecord> fileRecords;
             void askServerUpdates();
             void createSyncDir();
         public:

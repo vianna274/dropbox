@@ -13,6 +13,19 @@ void User::createUserDir(){
     struct stat st;
 	if(stat(dirPath.c_str(), &st) == -1) //Se não existe cria, se existe faz nada
 		mkdir(dirPath.c_str(), 0777);
+    DIR * dir;
+    struct dirent *ent;
+    struct stat filestatus;
+    if ((dir = opendir (dirPath.c_str())) != NULL) {
+        while ((ent = readdir (dir)) != NULL) {
+            if(ent->d_type == 0x8) {
+                stat((dirPath + ent->d_name).c_str(), &filestatus);
+                FileRecord fileRecord = make_record(ent->d_name, filestatus.st_ctim.tv_sec, filestatus.st_atim.tv_sec, filestatus.st_mtim.tv_sec, filestatus.st_size);
+				fileRecords.push_back(fileRecord);
+            }
+        }
+        closedir(dir);
+    } 
 }
 
 string User::getUsername(){

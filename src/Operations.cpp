@@ -8,7 +8,6 @@ Operations::Operations() {}
 vector<FileRecord> Operations::getFileList(string dirPath) {
     vector<FileRecord> files;
     struct stat filestatus;
-    string extension;
     DIR *dir;
     struct dirent *ent;
 
@@ -99,7 +98,6 @@ void Operations::sendFile(WrapperSocket *socket, string filePath){
 }
 
 vector<FileRecord> Operations::receiveFileList(WrapperSocket * socket) {
-	cout << "Files on server:" << endl;
 	MessageData *unconvertedFiles;
 	FileRecord record;
 	vector<FileRecord> files;

@@ -33,6 +33,7 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 void Client::askServerUpdates() {
 	while(1) {
 		this->mtx.lock();
+		//METER AQUI O INOTIFY
 		this->askUpdate();
 		this->mtx.unlock();
 		this_thread::sleep_for(chrono::milliseconds(5000));
@@ -100,7 +101,30 @@ void Client::list_client(){
 
 void Client::get_sync_dir(){
 	this->createSyncDir();
-	cout << "Getting sync dir" << endl;
+	// DELETAR TUDO E BAIXAR TUDO COM DATAS :)
+	DIR * dir;
+    struct dirent *ent;
+    if ((dir = opendir (this->getSyncDirPath().c_str())) != NULL) {
+        while ((ent = readdir (dir)) != NULL) {
+            if(ent->d_type == 0x8) {
+                remove(ent->d_name);
+            }
+        }
+        closedir(dir);
+    } 
+	cout << "deleted all" << endl;
+	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
+	socket->send(&packet);
+	this->fileRecords = this->receiveFileList(this->getSocket());
+	for(FileRecord record : this->fileRecords){
+		MessageData request = make_packet(TYPE_REQUEST_DOWNLOAD, 1 , 1, -1, record.filename);
+		this->socket->send(&request);
+		MessageData *data = this->socket->receive(TIMEOUT_OFF);
+		if(data->type == TYPE_SEND_FILE)
+			this->receiveFile(this->socket, record.filename, this->getSyncDirPath());
+	}
+	this->printFileList(this->fileRecords);
+	cout << "received all" << endl;
 }
 
 void Client::exit(){

@@ -144,9 +144,6 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 
 void Server::receiveAskUpdate(WrapperSocket * socket, User * user) {
     vector<FileRecord> clientFiles = this->receiveFileList(socket);
-
-    
-
     this->sendDeleteAll(socket);
     this->sendUploadAll(socket, user->getDirPath(), this->getFileList(user->getDirPath()));
     MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, -1, "request_update_done");
