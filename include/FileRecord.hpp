@@ -10,8 +10,8 @@ namespace Dropbox {
 
   struct _FileRecord
   {
-    char filename[20];
-    char type[20];
+    char filename[200];
+    char type[10];
     char date[25];
     int size;
   };

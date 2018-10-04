@@ -112,8 +112,6 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 		MessageData *data = socket->receive(TIMEOUT_OFF);
         user->lockDevices();
         switch(data->type){
-            case TYPE_DATA:
-                break;
             case TYPE_REQUEST_DOWNLOAD:
                 sendFile(socket, user->getDirPath() + string(data->payload));
                 break;

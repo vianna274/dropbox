@@ -59,6 +59,7 @@ void Client::askUpdate() {
 		MessageData * response = this->socket->receive(TIMEOUT_OFF);
 		switch (response->type) {
 			case TYPE_NOTHING_TO_SEND:
+				break;
 			case TYPE_REQUEST_UPDATE_DONE:
 				return;
 			case TYPE_SEND_UPLOAD_ALL:

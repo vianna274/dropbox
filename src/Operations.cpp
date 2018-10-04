@@ -135,6 +135,7 @@ void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<Fi
     int seq = 1;
     for(FileRecord record : files) {
 		this->sendFile(socket, dirPath + record.filename);
+		cout << "AQUI" << dirPath + record.filename << endl;
         seq++;
     }
 	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "send_upload_all_done");
