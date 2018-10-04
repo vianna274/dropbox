@@ -87,7 +87,7 @@ void Client::download(string filename){
 
 	MessageData *data = this->socket->receive(TIMEOUT_OFF);
 	if(data->type == TYPE_SEND_FILE)
-		this->receiveUpload(this->socket, filename, currentPath);
+		this->receiveFile(this->socket, filename, currentPath);
 	else if(data->type == TYPE_NOTHING_TO_SEND)
 		cout << "File does not exist." << endl;
 	this->mtx.unlock();

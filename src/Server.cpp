@@ -115,22 +115,22 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
             case TYPE_DATA:
                 break;
             case TYPE_REQUEST_DOWNLOAD:
-                sendUpload(socket, this->rootDir + user->getUsername() + "/" + string(data->payload));
+                sendFile(socket, user->getDirPath() + string(data->payload));
                 break;
             case TYPE_DELETE:
-                receiveDeleteFile(socket, string(data->payload), user->getDirPath());
+                deleteFile(string(data->payload) + user->getDirPath());
                 break;
             case TYPE_LIST_SERVER:
                 sendFileList(socket, user->getDirPath(), getFileList(user->getDirPath()));
                 break;
             case TYPE_SEND_FILE:
-                receiveUpload(socket, string(data->payload), user->getDirPath());
+                receiveFile(socket, string(data->payload), user->getDirPath());
                 break;
             case TYPE_REQUEST_UPLOAD_ALL:
                 sendUploadAll(socket, user->getDirPath(), getFileList(user->getDirPath()));
                 break;
             case TYPE_REQUEST_UPDATE:
-                this->receiveAskUpdate(socket, user);
+                receiveAskUpdate(socket, user);
                 break;
             case EXIT:
                 exitUser(socket, user);

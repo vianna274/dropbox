@@ -40,7 +40,7 @@ void Operations::sendFileList(WrapperSocket *socket, string dirPath, vector<File
     }
 }
 
-void Operations::receiveUpload(WrapperSocket *socket, string filename, string dirPath) {
+void Operations::receiveFile(WrapperSocket *socket, string filename, string dirPath) {
     string filePath = dirPath + filename;
 
     ofstream newFile;
@@ -60,13 +60,13 @@ void Operations::receiveUpload(WrapperSocket *socket, string filename, string di
     newFile.close();
 }
 
-void Operations::sendUpload(WrapperSocket *socket, string filePath){
+void Operations::sendFile(WrapperSocket *socket, string filePath){
 
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
 	cout << "path: " << filePath << "     name : " << filename << endl;
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
-		  cout << "Failed to upload: File " << filePath << " does not exist." << endl;
+		  cout << "Failed to send: File " << filePath << " does not exist." << endl;
 		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "");
 		  socket->send(&failed);
 		  return;
@@ -121,7 +121,7 @@ void Operations::receiveUploadAll(WrapperSocket * socket, string dirPath) {
 		if (packet->type == TYPE_SEND_UPLOAD_ALL_DONE ||
 			packet->type == TYPE_NOTHING_TO_SEND)
 			break;
-		this->receiveUpload(socket, string(packet->payload), dirPath + '/');
+		this->receiveFile(socket, string(packet->payload), dirPath);
 	}
 }
 
@@ -134,7 +134,7 @@ void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<Fi
 	socket->send(&packet);
     int seq = 1;
     for(FileRecord record : files) {
-		this->sendUpload(socket, dirPath + '/' + record.filename);
+		this->sendFile(socket, dirPath + record.filename);
         seq++;
     }
 	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "send_upload_all_done");
@@ -154,11 +154,6 @@ void Operations::sendDeleteFile(WrapperSocket * socket, string filename){
 void Operations::sendDeleteAll(WrapperSocket * socket) {
 	MessageData packet = make_packet(TYPE_DELETE_ALL, 1, 1, -1, "delete_all");
 	socket->send(&packet);
-}
-
-void Operations::receiveDeleteFile(WrapperSocket *socket, string filename, string dirPath){
-  string fullpath = dirPath + filename;
-  this->deleteFile(fullpath);
 }
 
 void Operations::deleteFile(string filepath) {

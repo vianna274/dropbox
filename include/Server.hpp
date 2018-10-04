@@ -41,7 +41,6 @@ class Server : public Operations
     mutex connectNewClientMutex;
     mutex portsMutex;
     const string rootDir = "/tmp/DropboxService/";
-    void receiveAskUpdate(WrapperSocket * socket, User * user);
   private:
     WrapperSocket connectClientSocket;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
@@ -51,6 +50,7 @@ class Server : public Operations
     void setPortAvailable(int port);
     void initializeUsers();
     void listenToClient(WrapperSocket *socket, User *user);
+    void receiveAskUpdate(WrapperSocket * socket, User * user);
     void refuseOverLimitClient(User *user);
     void connectNewClient();
     User* getUser(string username);

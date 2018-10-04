@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 			boost::to_upper(command);
 			if (command == "UPLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- upload <file path>");
-				else client.sendUpload(client.getSocket(), arguments[1]);
+				else client.sendFile(client.getSocket(), arguments[1]);
 
 			}else if (command == "DOWNLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- download <file path>");
