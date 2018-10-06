@@ -30,14 +30,43 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 	cout << "Connected Successfully." << endl;
 }
 
+void Client::initializeInotify(int *fd, int *wd){
+	/* Initialize Inotify*/
+	*fd = inotify_init();
+	if ( *fd < 0 ) {
+		cout << "Couldn't initialize inotify" << endl;
+	}
+	/* add watch to starting directory */
+	*wd = inotify_add_watch(*fd, syncDirPath.c_str(), IN_CLOSE_WRITE | IN_MOVED_FROM | IN_MOVED_TO); 
+
+	if (*wd == -1){
+		cout << "Couldn't add watch to " << syncDirPath.c_str() << endl;
+	}
+}
 void Client::askServerUpdates() {
+	
+	int fd, wd;
+	this->initializeInotify(&fd, &wd);
+	
 	while(1) {
 		this->mtx.lock();
-		//METER AQUI O INOTIFY
+		
+		this->eventsInotify(&fd);
+		
+		inotify_rm_watch(fd, wd);
+		close(fd);
+
 		this->askUpdate();
+
+		int fd, wd;
+		this->initializeInotify(&fd, &wd);
+
 		this->mtx.unlock();
 		this_thread::sleep_for(chrono::milliseconds(5000));
 	}
+	/* Clean up*/
+	inotify_rm_watch(fd, wd);
+	close(fd);
 }
 
 void Client::createSyncDir(){
@@ -71,6 +100,42 @@ void Client::askUpdate() {
 				break;
 			default:
 				cout << "Received " + to_string(response->type) << endl;
+		}
+	}
+}
+
+void Client::eventsInotify(int* fd){
+	int length, i = 0;
+	char buffer[BUF_LEN];
+	struct pollfd pfd = { *fd, POLLIN, 0 };
+	int ret = poll(&pfd, 1, 50);  // timeout of 50ms
+	if (ret < 0) {
+		fprintf(stderr, "poll failed: %s\n", strerror(errno));
+	} else if (ret == 0) {
+		// Timeout with no events, move on.
+	} else {
+		// Process the new event.
+		length = read(*fd, buffer, BUF_LEN);  
+		while (i < length) {
+			struct inotify_event *event = ( struct inotify_event * ) &buffer[ i ];
+			if (event->len ) {
+				string filename(event->name);
+				string path = syncDirPath + filename;
+				if(event->mask & IN_MOVED_TO){
+					this->sendFile(this->socket, path.c_str());
+				}
+			
+				if(event->mask & IN_MOVED_FROM){
+					this->sendDeleteFile(this->socket, filename.c_str());
+				}  
+		
+				if(event->mask & IN_CLOSE_WRITE){
+					this->sendDeleteFile(this->socket, filename.c_str());
+					this->sendFile(this->socket, path.c_str());
+				} 
+	
+			i += EVENT_SIZE + event->len;
+			}
 		}
 	}
 }

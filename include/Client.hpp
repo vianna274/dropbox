@@ -14,6 +14,15 @@
 #include <thread>
 #include <mutex>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/inotify.h>
+#include <limits.h>
+
 #include "WrapperSocket.hpp"
 #include "MessageData.hpp"
 #include "constants.hpp"
@@ -38,6 +47,8 @@ namespace Dropbox
             Client(string username, string serverAddr, int serverDistributorPort);
             ~Client();
             void askUpdate();
+            void eventsInotify(int* fd);
+            void initializeInotify(int *fd, int *wd);
             void uploadAll(string filePath);
             void download(string filename);
             void downloadAll(string filePath);
