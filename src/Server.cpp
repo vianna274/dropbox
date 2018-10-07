@@ -47,13 +47,16 @@ void Server::initializePorts()
 
 int Server::getAvailablePort()
 {
+    portsMutex.lock();
     for(int p = FIRST_PORT; p <= LAST_PORT; p++){
         int i = p - FIRST_PORT;
         if(portsAvailable[i]){
             portsAvailable[i] = false;
+            portsMutex.unlock();
             return p;
         }
     }
+    portsMutex.unlock();
     return -1;
 }
 
@@ -151,7 +154,9 @@ void Server::receiveAskUpdate(WrapperSocket * socket, User * user) {
 }
 
 void Server::setPortAvailable(int port){
+    portsMutex.lock();
     this->portsAvailable[port - FIRST_PORT] = true;
+    portsMutex.unlock();
 }
 
 void Server::exitUser(WrapperSocket *socket, User *user){

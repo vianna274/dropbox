@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
 		
 		vector<string> arguments = getArguments();
 		if(arguments.size() > 0 && arguments.size() < 3){
+			client.lockMutex();
 			string command = arguments[0];
 			boost::to_upper(command);
 			if (command == "UPLOAD"){
@@ -81,6 +82,8 @@ int main(int argc, char *argv[])
 			} else {
 				puts("Unidentified command!");
 			}
+
+			client.unlockMutex();
 		}
 	}
 

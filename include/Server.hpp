@@ -38,9 +38,9 @@ class Server : public Operations
     Server();
     int getAvailablePort();
 
-    mutex connectNewClientMutex;
     mutex portsMutex;
     const string rootDir = "/tmp/DropboxService/";
+
   private:
     WrapperSocket connectClientSocket;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];

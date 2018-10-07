@@ -41,8 +41,10 @@ namespace Dropbox
             string syncDirPath;
             mutex mtx;
             vector<FileRecord> fileRecords;
+
             void askServerUpdates();
             void createSyncDir();
+
         public:
             Client(string username, string serverAddr, int serverDistributorPort);
             ~Client();
@@ -60,6 +62,8 @@ namespace Dropbox
             void requestServerFileList();
             Dropbox::WrapperSocket * getSocket() { return socket; }
             string getSyncDirPath() { return syncDirPath; }
+            void lockMutex() { this->mtx.lock(); };
+            void unlockMutex() { this->mtx.unlock(); };
     };
 }
 

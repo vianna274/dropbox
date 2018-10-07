@@ -49,7 +49,7 @@ void Client::askServerUpdates() {
 	this->initializeInotify(&fd, &wd);
 	
 	while(1) {
-		this->mtx.lock();
+		this->lockMutex();
 		
 		this->eventsInotify(&fd);
 		
@@ -61,7 +61,7 @@ void Client::askServerUpdates() {
 		int fd, wd;
 		this->initializeInotify(&fd, &wd);
 
-		this->mtx.unlock();
+		this->unlockMutex();
 		this_thread::sleep_for(chrono::milliseconds(5000));
 	}
 	/* Clean up*/
@@ -125,7 +125,7 @@ void Client::eventsInotify(int* fd){
 					this->sendFile(this->socket, path.c_str());
 				}
 			
-				if(event->mask & IN_MOVED_FROM){
+				if(event->mask & IN_MOVED_FROM || event->mask & IN_DELETE){
 					this->sendDeleteFile(this->socket, filename.c_str());
 				}  
 		
@@ -141,7 +141,6 @@ void Client::eventsInotify(int* fd){
 }
 
 void Client::download(string filename){
-	this->mtx.lock();
 	MessageData request = make_packet(TYPE_REQUEST_DOWNLOAD, 1 , 1, -1, filename.c_str());
 	this->socket->send(&request);
 
@@ -157,11 +156,10 @@ void Client::download(string filename){
 		this->receiveFile(this->socket, filename, currentPath);
 	else if(data->type == TYPE_NOTHING_TO_SEND)
 		cout << "File does not exist." << endl;
-	this->mtx.unlock();
 }
 
 void Client::list_client(){
-	cout << "listing clients" << "\n";
+	printFileList(this->fileRecords);
 }
 
 void Client::get_sync_dir(){
@@ -202,10 +200,9 @@ void Client::triggerNotifications() {
 }
 
 void Client::requestServerFileList() {
-	this->mtx.lock();
+
 	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
 	socket->send(&packet);
 	vector<FileRecord> files = this->receiveFileList(this->getSocket());
 	this->printFileList(files);
-	this->mtx.unlock();
 }

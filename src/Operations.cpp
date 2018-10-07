@@ -113,7 +113,7 @@ vector<FileRecord> Operations::receiveFileList(WrapperSocket * socket) {
 void Operations::printFileList(vector<FileRecord> fileRecords) {
 	for(FileRecord record : fileRecords) {
 		cout << setw(10);
-		cout << record.filename << "       creation time : " << ctime(&record.creationTime) << " 	   last modified: " << ctime(&record.modificationTime) << "          last accessed: " << ctime(&record.accessTime)<< endl;
+		cout << record.filename << " changed time: " << ctime(&record.creationTime) << " 	   last modified: " << ctime(&record.modificationTime) << " 	   last accessed: " << ctime(&record.accessTime)<< endl;
 	}
 }
 
