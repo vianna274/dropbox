@@ -207,7 +207,7 @@ void Client::list_client(){
 }
 
 void Client::get_sync_dir(){
-	this->lockMutex();
+
 	this->createSyncDir();
 	// DELETAR TUDO E BAIXAR TUDO COM DATAS :)
 	DIR * dir;
@@ -233,7 +233,6 @@ void Client::get_sync_dir(){
 		}
 	}
 	this->printFileList(this->fileRecords);
-	this->unlockMutex();
 	cout << "received all" << endl;
 }
 
