@@ -153,16 +153,18 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
     delete socket;
 }
 
-int Server::findRecord(FileRecord file, vector<FileRecord> *files) {
+int Server::findRecord(FileRecord file, vector<FileRecord> *files, FileRecord * updatedFile) {
     vector<FileRecord>::iterator it;
     for(it = files->begin(); it != files->end(); it++) {
         if (string(it->filename) == string(file.filename)) {
             files->erase(it);
             cout << it->modificationTime << " " << file.modificationTime << endl;
-            if (it->modificationTime == file.modificationTime)
+            if (it->modificationTime == file.modificationTime) 
                 return OK;
-            else 
+            else {
+                *updatedFile = *it;
                 return UPDATE;
+            }
         }
     }
     return DELETE;
@@ -171,8 +173,9 @@ int Server::findRecord(FileRecord file, vector<FileRecord> *files) {
 void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> clientFiles, 
     WrapperSocket * socket, User * user) {
     vector<FileRecord>::iterator it;
+    FileRecord temp;
     for(it = clientFiles.end()-1; it != clientFiles.begin()-1; it--) {
-        switch(this->findRecord(*it, &serverFiles)) {
+        switch(this->findRecord(*it, &serverFiles, &temp)) {
             case OK: 
                 cout << string(it->filename) << " is updated" << endl;
                 break;
@@ -180,9 +183,9 @@ void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> cli
                 this->sendDeleteFile(socket, string(it->filename));
                 break;
             case UPDATE:
-                this->sendDeleteFile(socket, string(it->filename));
-                cout << "Sending " << it->filename << " " << it->modificationTime << endl; 
-                this->sendFile(socket, user->getDirPath() + string(it->filename), *it);
+                this->sendDeleteFile(socket, string(temp.filename));
+                cout << "Sending " << temp.filename << " " << temp.modificationTime << endl; 
+                this->sendFile(socket, user->getDirPath() + string(temp.filename), temp);
                 break;
         }
     }

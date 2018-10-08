@@ -102,8 +102,8 @@ void Client::askUpdate() {
 				this->receiveFile(this->socket, string(fileRecord.filename), 
 					this->getSyncDirPath());
 				cout << string(response->payload) << endl;
-				cout << "Adding " << fileRecord.filename << " " << fileRecord.accessTime << endl;
-				this->fileRecords.push_back(fileRecord);
+				cout << "Adding " << fileRecord.filename << " " << fileRecord.modificationTime << endl;
+				this->updateFileRecord(fileRecord);
 				break;
 			case TYPE_SEND_UPLOAD_ALL:
 				this->receiveUploadAll(this->socket, this->getSyncDirPath());
@@ -137,6 +137,7 @@ void Client::updateFileRecord(FileRecord newFile) {
 			return;
 		}
 	}
+	this->fileRecords.push_back(newFile);
 }
 
 void Client::eventsInotify(int* fd){
@@ -159,19 +160,20 @@ void Client::eventsInotify(int* fd){
 				vector<FileRecord> tempFiles = this->getFileList(this->getSyncDirPath());
 				FileRecord newFile = this->getRecord(tempFiles, filename);
 				if(event->mask & IN_MOVED_TO){
+					cout << "Inotify Adding" << endl;
 					this->sendFile(this->socket, path.c_str(), newFile);
-					this->fileRecords.push_back(newFile);
 				}
 			
 				if(event->mask & IN_MOVED_FROM || event->mask & IN_DELETE){
+					cout << "Inotify Removing" << endl;
 					this->sendDeleteFile(this->socket, filename.c_str());
 					this->removeFileRecord(filename);
 				}  
 		
 				if(event->mask & IN_CLOSE_WRITE){
+					cout << "Inotify Updating" << endl;
 					this->sendDeleteFile(this->socket, filename.c_str());
 					this->sendFile(this->socket, path.c_str(), newFile);
-					this->updateFileRecord(newFile);
 				} 
 	
 			i += EVENT_SIZE + event->len;

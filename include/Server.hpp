@@ -54,7 +54,7 @@ class Server : public Operations
     void refuseOverLimitClient(User *user);
     void connectNewClient();
     User* getUser(string username);
-    int findRecord(FileRecord file, vector<FileRecord> *files);
+    int findRecord(FileRecord file, vector<FileRecord> *files, FileRecord * updatedFile);
     void updateClient(vector<FileRecord> serverFiles, vector<FileRecord> clientFiles, 
       WrapperSocket * socket, User * user);
     void exitUser(WrapperSocket *socket, User *user);

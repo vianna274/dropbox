@@ -76,7 +76,7 @@ void Operations::sendFile(WrapperSocket *socket, string filePath, FileRecord fil
 		  socket->send(&failed);
 		  return;
 	}
-	cout << "Sending Soccket " << fileRec.filename << " " << fileRec.accessTime << endl;
+	cout << "Sending Soccket " << fileRec.filename << " " << fileRec.modificationTime << endl;
 	MessageData packet = make_packet(TYPE_SEND_FILE, 1, 1, sizeof(FileRecord), (char *)&fileRec);
 	socket->send(&packet);
 
