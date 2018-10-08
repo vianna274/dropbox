@@ -60,6 +60,8 @@ namespace Dropbox
             void exit();
             void triggerNotifications();
             void requestServerFileList();
+            void removeFileRecord(string filename);
+            void updateFileRecord(FileRecord newFile);
             Dropbox::WrapperSocket * getSocket() { return socket; }
             string getSyncDirPath() { return syncDirPath; }
             void lockMutex() { this->mtx.lock(); };

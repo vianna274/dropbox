@@ -10,7 +10,7 @@ MessageData Dropbox::make_packet(int type, int seq, int totalSize, int len, cons
     data.totalSize = totalSize;
     data.len = len;
     // File packets can't have \0 at the end of the payload
-    if(type == TYPE_DATA)
+    if(type == TYPE_DATA || type == TYPE_SEND_FILE)
         memcpy(data.payload, payload, len);
     else
         strncpy(data.payload, payload, MESSAGE_LEN);

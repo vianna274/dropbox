@@ -84,14 +84,27 @@ Client::~Client(){
 void Client::askUpdate() {
 	MessageData request = make_packet(TYPE_REQUEST_UPDATE, 1 , 1, -1, "type_request_update");
 	this->socket->send(&request);
-	this->sendFileList(this->socket, this->getSyncDirPath(), this->getFileList(this->getSyncDirPath()));
+	this->sendFileList(this->socket, this->fileRecords);
 	while(1) {
 		MessageData * response = this->socket->receive(TIMEOUT_OFF);
+		FileRecord fileRecord;
 		switch (response->type) {
 			case TYPE_NOTHING_TO_SEND:
 				break;
 			case TYPE_REQUEST_UPDATE_DONE:
 				return;
+			case TYPE_DELETE:
+				this->deleteFile(this->getSyncDirPath() + string(response->payload));
+				this->removeFileRecord(string(response->payload));
+				break;
+			case TYPE_SEND_FILE:
+				fileRecord = *((FileRecord *)response->payload);
+				this->receiveFile(this->socket, string(fileRecord.filename), 
+					this->getSyncDirPath());
+				cout << string(response->payload) << endl;
+				cout << "Adding " << fileRecord.filename << " " << fileRecord.accessTime << endl;
+				this->fileRecords.push_back(fileRecord);
+				break;
 			case TYPE_SEND_UPLOAD_ALL:
 				this->receiveUploadAll(this->socket, this->getSyncDirPath());
 				break;
@@ -100,6 +113,28 @@ void Client::askUpdate() {
 				break;
 			default:
 				cout << "Received " + to_string(response->type) << endl;
+		}
+	}
+}
+
+void Client::removeFileRecord(string filename) {
+	vector<FileRecord>::iterator it;
+	for(it = this->fileRecords.begin(); it != this->fileRecords.end(); it++) {
+		if (string(it->filename) == filename) {
+			cout << "Removing " << it->filename << " " << it->modificationTime << endl;
+			this->fileRecords.erase(it);
+			return;
+		}
+	}
+}
+
+void Client::updateFileRecord(FileRecord newFile) {
+	vector<FileRecord>::iterator it;
+	for(it = this->fileRecords.begin(); it != this->fileRecords.end(); it++) {
+		if (string(it->filename) == string(newFile.filename)) {
+			cout << "Updating " << newFile.filename << " " << newFile.modificationTime << endl;
+			*it = newFile;
+			return;
 		}
 	}
 }
@@ -121,17 +156,22 @@ void Client::eventsInotify(int* fd){
 			if (event->len ) {
 				string filename(event->name);
 				string path = syncDirPath + filename;
+				vector<FileRecord> tempFiles = this->getFileList(this->getSyncDirPath());
+				FileRecord newFile = this->getRecord(tempFiles, filename);
 				if(event->mask & IN_MOVED_TO){
-					this->sendFile(this->socket, path.c_str());
+					this->sendFile(this->socket, path.c_str(), newFile);
+					this->fileRecords.push_back(newFile);
 				}
 			
 				if(event->mask & IN_MOVED_FROM || event->mask & IN_DELETE){
 					this->sendDeleteFile(this->socket, filename.c_str());
+					this->removeFileRecord(filename);
 				}  
 		
 				if(event->mask & IN_CLOSE_WRITE){
 					this->sendDeleteFile(this->socket, filename.c_str());
-					this->sendFile(this->socket, path.c_str());
+					this->sendFile(this->socket, path.c_str(), newFile);
+					this->updateFileRecord(newFile);
 				} 
 	
 			i += EVENT_SIZE + event->len;
@@ -152,8 +192,10 @@ void Client::download(string filename){
 	currentPath += "/";
 
 	MessageData *data = this->socket->receive(TIMEOUT_OFF);
-	if(data->type == TYPE_SEND_FILE)
-		this->receiveFile(this->socket, filename, currentPath);
+	if(data->type == TYPE_SEND_FILE) {
+		FileRecord * fileRecord = (FileRecord *)(data->payload);
+		this->receiveFile(this->socket, string(fileRecord->filename), currentPath);
+	}
 	else if(data->type == TYPE_NOTHING_TO_SEND)
 		cout << "File does not exist." << endl;
 }
@@ -163,6 +205,7 @@ void Client::list_client(){
 }
 
 void Client::get_sync_dir(){
+	this->lockMutex();
 	this->createSyncDir();
 	// DELETAR TUDO E BAIXAR TUDO COM DATAS :)
 	DIR * dir;
@@ -183,10 +226,12 @@ void Client::get_sync_dir(){
 		MessageData request = make_packet(TYPE_REQUEST_DOWNLOAD, 1 , 1, -1, record.filename);
 		this->socket->send(&request);
 		MessageData *data = this->socket->receive(TIMEOUT_OFF);
-		if(data->type == TYPE_SEND_FILE)
+		if(data->type == TYPE_SEND_FILE) {
 			this->receiveFile(this->socket, record.filename, this->getSyncDirPath());
+		}
 	}
 	this->printFileList(this->fileRecords);
+	this->unlockMutex();
 	cout << "received all" << endl;
 }
 

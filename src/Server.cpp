@@ -111,20 +111,29 @@ void Server::refuseOverLimitClient(User *user)
 void Server::listenToClient(WrapperSocket *socket, User *user)
 {   
     bool exit = false;
+    FileRecord * temp = NULL;
+    FileRecord fileTemp;
+    vector<FileRecord> tempFiles = this->getFileList(user->getDirPath());
 	while(!exit){
 		MessageData *data = socket->receive(TIMEOUT_OFF);
         user->lockDevices();
         switch(data->type){
             case TYPE_REQUEST_DOWNLOAD:
-                sendFile(socket, user->getDirPath() + string(data->payload));
+                tempFiles = this->getFileList(user->getDirPath());
+                fileTemp = this->getRecord(tempFiles, string(data->payload));
+                sendFile(socket, user->getDirPath() + string(data->payload), fileTemp);
                 break;
             case TYPE_DELETE:
                 deleteFile(user->getDirPath() + string(data->payload));
                 break;
             case TYPE_LIST_SERVER:
-                sendFileList(socket, user->getDirPath(), getFileList(user->getDirPath()));
+                sendFileList(socket, getFileList(user->getDirPath()));
                 break;
             case TYPE_SEND_FILE:
+                temp = (FileRecord *)(data->payload);
+                receiveFile(socket, string(temp->filename), user->getDirPath());
+                break;
+            case TYPE_SEND_FILE_NO_RECORD:
                 receiveFile(socket, string(data->payload), user->getDirPath());
                 break;
             case TYPE_REQUEST_UPLOAD_ALL:
@@ -144,12 +153,50 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
     delete socket;
 }
 
+int Server::findRecord(FileRecord file, vector<FileRecord> *files) {
+    vector<FileRecord>::iterator it;
+    for(it = files->begin(); it != files->end(); it++) {
+        if (string(it->filename) == string(file.filename)) {
+            files->erase(it);
+            cout << it->modificationTime << " " << file.modificationTime << endl;
+            if (it->modificationTime == file.modificationTime)
+                return OK;
+            else 
+                return UPDATE;
+        }
+    }
+    return DELETE;
+}
+
+void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> clientFiles, 
+    WrapperSocket * socket, User * user) {
+    vector<FileRecord>::iterator it;
+    for(it = clientFiles.end()-1; it != clientFiles.begin()-1; it--) {
+        switch(this->findRecord(*it, &serverFiles)) {
+            case OK: 
+                cout << string(it->filename) << " is updated" << endl;
+                break;
+            case DELETE:
+                this->sendDeleteFile(socket, string(it->filename));
+                break;
+            case UPDATE:
+                this->sendDeleteFile(socket, string(it->filename));
+                cout << "Sending " << it->filename << " " << it->modificationTime << endl; 
+                this->sendFile(socket, user->getDirPath() + string(it->filename), *it);
+                break;
+        }
+    }
+    for(FileRecord serverFile: serverFiles) {
+        cout << "Sending " << serverFile.filename << " " << serverFile.modificationTime << endl; 
+        this->sendFile(socket, user->getDirPath() + string(serverFile.filename), serverFile);
+    }
+
+}
 
 void Server::receiveAskUpdate(WrapperSocket * socket, User * user) {
     vector<FileRecord> clientFiles = this->receiveFileList(socket);
-    this->sendDeleteAll(socket);
-    this->sendUploadAll(socket, user->getDirPath(), this->getFileList(user->getDirPath()));
-    MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, -1, "request_update_done");
+    this->updateClient(this->getFileList(user->getDirPath()), clientFiles, socket, user);
+     MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, -1, "request_update_done");
 	socket->send(&packet);
 }
 

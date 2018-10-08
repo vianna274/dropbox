@@ -22,10 +22,12 @@ class Operations
     void deleteFile(string filepath);
     void deleteAll(vector<FileRecord> files, string dirPath);
     vector<FileRecord> getFileList(string dirPath);
+    FileRecord getRecord(vector<FileRecord> files, string filename);
 
     void sendNothing(WrapperSocket * socket);
 
-    void sendFileList(WrapperSocket * socket, string dirPath, vector<FileRecord> files);
+    void sendFileList(WrapperSocket * socket, vector<FileRecord> files);
+    void sendFile(WrapperSocket * socket, string filePath, FileRecord fileRec);
     void sendFile(WrapperSocket * socket, string filePath);
     void sendDeleteFile(WrapperSocket * socket, string filename);
     void sendUploadAll(WrapperSocket * socket, string dirPath, vector<FileRecord> files);
