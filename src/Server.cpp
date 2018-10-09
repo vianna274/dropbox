@@ -7,9 +7,18 @@ Server::Server() : connectClientSocket(SERVER_PORT)
 {
     initializeUsers();
     initializePorts();
+}
+
+void Server::run(){
 
     while(true){
         connectNewClient();
+    }
+}
+
+Server::~Server(){
+    for(User *user : users){
+        delete user;
     }
 }
 

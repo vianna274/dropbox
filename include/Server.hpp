@@ -30,13 +30,22 @@
 
 using namespace std;
 
+/**
+ *  Class representing the Server
+ * 
+ */
 namespace Dropbox {
 
 class Server : public Operations
 {
   public:
     Server();
-    int getAvailablePort();
+    ~Server();
+
+    /**
+     *  Run the server, listening to new clients in order to create new connections on a new socket
+     */
+    void run();
 
     mutex portsMutex;
     const string rootDir = "/tmp/DropboxService/";
@@ -46,17 +55,68 @@ class Server : public Operations
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
 
+    /**
+     *  Return a Port not beign used.
+     *  Race condition is protected by portsMutex
+     */
+    int getAvailablePort();
+
+    /**
+     *  Set all port to available
+     */
     void initializePorts();
+
+    /**
+     *  Set a port to available
+     *  Race condition is protected by portsMutex
+     */
     void setPortAvailable(int port);
+
+    /**
+     *  Check all directories on /tmp/DropboxService/ and create an User for each directory
+     */
     void initializeUsers();
+
+    /**
+     *  This method is executed in another thread, listening to client requests
+     */
     void listenToClient(WrapperSocket *socket, User *user);
+
+    /**
+     *  Receive a request to check if a file is outdated
+     */
     void receiveAskUpdate(WrapperSocket * socket, User * user);
+
+    /**
+     *  Refuse a client if the number of devices being used by the client is bigger than MAX_DEVICES
+     */
     void refuseOverLimitClient(User *user);
+
+    /**
+     *  Connect a new Client on a new socket with a new port
+     */
     void connectNewClient();
+
+    /**
+     *  Returns the User from username
+     *  Returns nullptr if the User does not exist
+     */
     User* getUser(string username);
+
+    /**
+     *  Look for the FileRecord given on server files and remove it from files if it doesn't need
+     *  to be sent to client. If it needs to be updated the updatedFile parameter is updated.
+     */
     int lookForRecordAndRemove(FileRecord file, vector<FileRecord> *files, FileRecord * updatedFile);
-    void updateClient(vector<FileRecord> serverFiles, vector<FileRecord> clientFiles, 
-      WrapperSocket * socket, User * user);
+
+    /**
+     *  Update oudated or missing client files
+     */
+    void updateClient(vector<FileRecord> serverFiles, vector<FileRecord> clientFiles, WrapperSocket * socket, User * user);
+
+    /** 
+     *  Ends a client session, closing its socket
+     */
     void exitUser(WrapperSocket *socket, User *user);
 };
 

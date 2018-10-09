@@ -234,10 +234,6 @@ void Client::exit(){
 	this->socket->send(&message);
 }
 
-void Client::triggerNotifications() {
-	cout << "Triggering notifications" << "\n";
-}
-
 void Client::requestServerFileList() {
 
 	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");

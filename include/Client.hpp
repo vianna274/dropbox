@@ -29,7 +29,10 @@
 #include "FileRecord.hpp"
 #include "Operations.hpp"
 
-
+/*
+*    Class representing the Client on the client-side of the System.
+*    The sync directory will be created on path /tmp/sync_dir_<username>
+*/
 namespace Dropbox
 {
     class Client : public Operations
@@ -58,7 +61,6 @@ namespace Dropbox
             void list_client();
             void get_sync_dir();
             void exit();
-            void triggerNotifications();
             void requestServerFileList();
             void removeFileRecord(string filename);
             void updateFileRecord(FileRecord newFile);

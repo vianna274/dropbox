@@ -14,6 +14,10 @@
 
 using namespace std;
 
+/**
+ *  Generic class that implements operations with files.
+ *  Both Client and Server extends this class. 
+ */
 namespace Dropbox {
 class Operations
 {

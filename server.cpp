@@ -18,7 +18,8 @@ using namespace Dropbox;
 int main(int argc, char *argv[])
 {	
 	Server *server = new Server();
-	
+	server->run();
+
 	delete server;
 	return 0;
 }
