@@ -68,7 +68,6 @@ FileRecord Operations::getRecord(vector<FileRecord> files, string filename) {
 void Operations::sendFile(WrapperSocket *socket, string filePath, FileRecord fileRec){
 
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
-	cout << "path: " << filePath << "     name : " << filename << endl;
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
 		  cout << "Failed to send: File " << filePath << " does not exist." << endl;
@@ -76,7 +75,6 @@ void Operations::sendFile(WrapperSocket *socket, string filePath, FileRecord fil
 		  socket->send(&failed);
 		  return;
 	}
-	cout << "Sending Soccket " << fileRec.filename << " " << fileRec.modificationTime << endl;
 	MessageData packet = make_packet(TYPE_SEND_FILE, 1, 1, sizeof(FileRecord), (char *)&fileRec);
 	socket->send(&packet);
 
@@ -108,7 +106,6 @@ void Operations::sendFile(WrapperSocket *socket, string filePath, FileRecord fil
 void Operations::sendFile(WrapperSocket *socket, string filePath){
 
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
-	cout << "path: " << filePath << "     name : " << filename << endl;
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
 		  cout << "Failed to send: File " << filePath << " does not exist." << endl;

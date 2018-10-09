@@ -101,8 +101,6 @@ void Client::askUpdate() {
 				fileRecord = *((FileRecord *)response->payload);
 				this->receiveFile(this->socket, string(fileRecord.filename), 
 					this->getSyncDirPath());
-				cout << string(response->payload) << endl;
-				cout << "Adding " << fileRecord.filename << " " << fileRecord.modificationTime << endl;
 				this->updateFileRecord(fileRecord);
 				break;
 			case TYPE_SEND_UPLOAD_ALL:
@@ -121,7 +119,6 @@ void Client::removeFileRecord(string filename) {
 	vector<FileRecord>::iterator it;
 	for(it = this->fileRecords.begin(); it != this->fileRecords.end(); it++) {
 		if (string(it->filename) == filename) {
-			cout << "Removing " << it->filename << " " << it->modificationTime << endl;
 			this->fileRecords.erase(it);
 			return;
 		}
@@ -132,7 +129,6 @@ void Client::updateFileRecord(FileRecord newFile) {
 	vector<FileRecord>::iterator it;
 	for(it = this->fileRecords.begin(); it != this->fileRecords.end(); it++) {
 		if (string(it->filename) == string(newFile.filename)) {
-			cout << "Updating " << newFile.filename << " " << newFile.modificationTime << endl;
 			*it = newFile;
 			return;
 		}
@@ -160,18 +156,15 @@ void Client::eventsInotify(int* fd){
 				vector<FileRecord> tempFiles = this->getFileList(this->getSyncDirPath());
 				FileRecord newFile = this->getRecord(tempFiles, filename);
 				if(event->mask & IN_MOVED_TO){
-					cout << "Inotify Adding" << endl;
 					this->sendFile(this->socket, path.c_str(), newFile);
 				}
 			
 				if(event->mask & IN_MOVED_FROM || event->mask & IN_DELETE){
-					cout << "Inotify Removing" << endl;
 					this->sendDeleteFile(this->socket, filename.c_str());
 					this->removeFileRecord(filename);
 				}  
 		
 				if(event->mask & IN_CLOSE_WRITE){
-					cout << "Inotify Updating" << endl;
 					this->sendDeleteFile(this->socket, filename.c_str());
 					this->sendFile(this->socket, path.c_str(), newFile);
 				} 
@@ -220,7 +213,7 @@ void Client::get_sync_dir(){
         }
         closedir(dir);
     } 
-	cout << "deleted all" << endl;
+	cout << "Deleted all files." << endl;
 	MessageData packet = make_packet(TYPE_LIST_SERVER, 1, 1, -1, "list_server");
 	socket->send(&packet);
 	this->fileRecords = this->receiveFileList(this->getSocket());
@@ -233,7 +226,7 @@ void Client::get_sync_dir(){
 		}
 	}
 	this->printFileList(this->fileRecords);
-	cout << "received all" << endl;
+	cout << "Received all files." << endl;
 }
 
 void Client::exit(){

@@ -43,11 +43,14 @@ int main(int argc, char *argv[])
 		vector<string> arguments = getArguments();
 		if(arguments.size() > 0 && arguments.size() < 3){
 			client.lockMutex();
+			
 			string command = arguments[0];
 			boost::to_upper(command);
 			if (command == "UPLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- upload <file path>");
-				else client.sendFile(client.getSocket(), arguments[1]);
+				else {
+					client.sendFile(client.getSocket(), arguments[1]);
+				}
 
 			}else if (command == "DOWNLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- download <file path>");
@@ -56,7 +59,9 @@ int main(int argc, char *argv[])
 				}
 			}else if (command == "DELETE"){
 				if(arguments.size() != 2) puts("Wrong size of command -- delete <file path>");
-				else client.sendDeleteFile(client.getSocket(), arguments[1]);
+				else {
+					client.sendDeleteFile(client.getSocket(), arguments[1]);
+				}
 
 			}else if (command == "LIST_SERVER"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_server");
@@ -66,7 +71,9 @@ int main(int argc, char *argv[])
 
 			}else if (command == "LIST_CLIENT"){
 				if(arguments.size() != 1) puts("Wrong size of command -- list_client");
-				else client.list_client();
+				else {
+					client.list_client();
+				}
 
 			}else if (command == "GET_SYNC_DIR"){
 				if(arguments.size() != 1) puts("Wrong size of command -- get_sync_dir");
@@ -76,8 +83,10 @@ int main(int argc, char *argv[])
 
 			}else if(command == "EXIT"){
 				if(arguments.size() != 1) puts("Wrong size of command -- exit");
-				else client.exit();
-				endSession = true;
+				else {
+					client.exit();
+					endSession = true;
+				}
 
 			} else {
 				puts("Unidentified command!");

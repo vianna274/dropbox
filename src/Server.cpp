@@ -153,16 +153,17 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
     delete socket;
 }
 
-int Server::findRecord(FileRecord file, vector<FileRecord> *files, FileRecord * updatedFile) {
+int Server::lookForRecordAndRemove(FileRecord file, vector<FileRecord> *files, FileRecord *updatedFile) {
     vector<FileRecord>::iterator it;
     for(it = files->begin(); it != files->end(); it++) {
         if (string(it->filename) == string(file.filename)) {
-            files->erase(it);
-            cout << it->modificationTime << " " << file.modificationTime << endl;
-            if (it->modificationTime == file.modificationTime) 
+            if (it->modificationTime == file.modificationTime) {
+                files->erase(it);
                 return OK;
+            }
             else {
                 *updatedFile = *it;
+                files->erase(it);
                 return UPDATE;
             }
         }
@@ -170,25 +171,26 @@ int Server::findRecord(FileRecord file, vector<FileRecord> *files, FileRecord * 
     return DELETE;
 }
 
-void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> clientFiles, 
-    WrapperSocket * socket, User * user) {
+void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> clientFiles, WrapperSocket *socket, User *user) {
+    cout << "Checking if user " << user->getUsername() << " is updated." << endl;
     vector<FileRecord>::iterator it;
     FileRecord temp;
-    for(it = clientFiles.end()-1; it != clientFiles.begin()-1; it--) {
-        switch(this->findRecord(*it, &serverFiles, &temp)) {
+    for(it = clientFiles.begin(); it != clientFiles.end(); it++) {
+        switch(this->lookForRecordAndRemove(*it, &serverFiles, &temp)) {
             case OK: 
-                cout << string(it->filename) << " is updated" << endl;
                 break;
             case DELETE:
+                cout << "Deleting " <<  string(it->filename) << " from " << user->getUsername() << " local device." << endl;
                 this->sendDeleteFile(socket, string(it->filename));
                 break;
             case UPDATE:
+                cout << "Updating " << temp.filename << " " << ctime(&temp.modificationTime) << endl; 
                 this->sendDeleteFile(socket, string(temp.filename));
-                cout << "Sending " << temp.filename << " " << temp.modificationTime << endl; 
                 this->sendFile(socket, user->getDirPath() + string(temp.filename), temp);
                 break;
         }
     }
+    // Send files that the client didn't have at the moment
     for(FileRecord serverFile: serverFiles) {
         cout << "Sending " << serverFile.filename << " " << serverFile.modificationTime << endl; 
         this->sendFile(socket, user->getDirPath() + string(serverFile.filename), serverFile);
@@ -199,7 +201,7 @@ void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> cli
 void Server::receiveAskUpdate(WrapperSocket * socket, User * user) {
     vector<FileRecord> clientFiles = this->receiveFileList(socket);
     this->updateClient(this->getFileList(user->getDirPath()), clientFiles, socket, user);
-     MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, -1, "request_update_done");
+    MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, -1, "request_update_done");
 	socket->send(&packet);
 }
 

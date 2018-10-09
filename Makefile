@@ -1,4 +1,4 @@
-GPP=g++ -std=c++11 -Wall
+GPP=g++ -std=c++11
 BIN_DIR=./bin
 SRC_DIR=./src
 BUILD_DIR=build
