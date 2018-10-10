@@ -208,7 +208,7 @@ void Client::get_sync_dir(){
     if ((dir = opendir (this->getSyncDirPath().c_str())) != NULL) {
         while ((ent = readdir (dir)) != NULL) {
             if(ent->d_type == 0x8) {
-                remove(ent->d_name);
+                deleteFile(this->getSyncDirPath()+string(ent->d_name));
             }
         }
         closedir(dir);
