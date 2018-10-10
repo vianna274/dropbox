@@ -91,17 +91,23 @@ void Server::connectNewClient()
             user = new User(username, rootDir+username+"/");
             users.push_back(user);
         }
-        else if(user->getNumDevicesConnected() == MAX_DEVICES){
-            refuseOverLimitClient(user);
-            return;
+        else{
+            user->lockDevices();
+            if(user->getNumDevicesConnected() == MAX_DEVICES){
+                refuseOverLimitClient(user);
+                user->unlockDevices();
+                return;
+            }
+            user->unlockDevices();
         }
-
         int newPort = getAvailablePort();
         MessageData packet = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, to_string(newPort).c_str());
 	    WrapperSocket *socket = new WrapperSocket(newPort);
         connectClientSocket.send(&packet);
-
+        
+        user->lockDevices();
         user->addDevice(socket);
+        user->unlockDevices();
 
         cout << "User " << user->getUsername() << " connected on port " << newPort << ". " << "Device " << user->getNumDevicesConnected() << "/" << MAX_DEVICES << endl; 
 
