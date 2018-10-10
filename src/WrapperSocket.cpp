@@ -112,7 +112,6 @@ void WrapperSocket::sendAck(MessageData *ack) {
   //printf("ACK sent\n");
 }
 
-
 void WrapperSocket::bindSocket(int port) {
   this->remoteSocketAddr.sin_family = AF_INET;
 	this->remoteSocketAddr.sin_port = htons(port);

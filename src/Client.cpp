@@ -202,7 +202,7 @@ void Client::list_client(){
 void Client::get_sync_dir(){
 
 	this->createSyncDir();
-	// DELETAR TUDO E BAIXAR TUDO COM DATAS :)
+	
 	DIR * dir;
     struct dirent *ent;
     if ((dir = opendir (this->getSyncDirPath().c_str())) != NULL) {

@@ -18,16 +18,38 @@
 
 using namespace std;
 
+/*
+*    Class for the socket functions
+*/
 namespace Dropbox {
 
 class WrapperSocket
 {
   public:
+    /*
+    *    Constructor for the client, connecting to the given host
+    */
     WrapperSocket(string host, int port);
+    
+    /*
+    *    Constructor for the server
+    */
     WrapperSocket(int port);
     ~WrapperSocket();
+
+    /*
+    *    Send a packet
+    */
     void send(MessageData *packet);
+
+    /*
+    *    Bind socket
+    */
     void bindSocket(int port);
+
+    /*
+    *    Receive a datagram and sends and ack if it is necessary
+    */
     MessageData *receive(int timeout);
     int getPortInt();
     
