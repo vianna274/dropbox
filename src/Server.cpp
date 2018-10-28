@@ -144,12 +144,9 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
             case TYPE_LIST_SERVER:
                 sendFileList(socket, getFileList(user->getDirPath()));
                 break;
-            case TYPE_SEND_FILE:
-                temp = (FileRecord *)(data->payload);
-                receiveFile(socket, string(temp->filename), user->getDirPath());
-                break;
             case TYPE_SEND_FILE_NO_RECORD:
                 receiveFile(socket, string(data->payload), user->getDirPath());
+                sendFileRecord(socket, string(data->payload), user->getDirPath());
                 break;
             case TYPE_REQUEST_UPLOAD_ALL:
                 sendUploadAll(socket, user->getDirPath(), getFileList(user->getDirPath()));
@@ -166,6 +163,12 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 	}
 
     delete socket;
+}
+
+void Server::sendFileRecord(WrapperSocket * socket, string filename, string dirPath) {
+    FileRecord record = this->getRecord(this->getFileList(dirPath), filename);
+    MessageData packet = make_packet(TYPE_DATA, 1, 1, sizeof(FileRecord), (char*)&record);
+    socket->send(&packet);
 }
 
 int Server::lookForRecordAndRemove(FileRecord file, vector<FileRecord> *files, FileRecord *updatedFile) {

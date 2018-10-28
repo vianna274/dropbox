@@ -98,6 +98,16 @@ class Operations
      *  Receive all files
      */
     void receiveUploadAll(WrapperSocket * socket, string dirPath);
+
+    /**
+     * Receive a file record
+     */
+    FileRecord receiveFileRecord(WrapperSocket * socket);
+
+    /**
+     * Send a file and receives a filerecord
+     */
+    FileRecord sendFileClient(WrapperSocket * socket, string filePath);
 };
 }
 

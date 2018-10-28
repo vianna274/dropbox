@@ -118,6 +118,11 @@ class Server : public Operations
      *  Ends a client session, closing its socket
      */
     void exitUser(WrapperSocket *socket, User *user);
+    
+    /**
+     * Sends the file's filerecord that's within the dirPath through the given socket
+     */
+    void sendFileRecord(WrapperSocket * socket, string filename, string dirPath);
 };
 
 }

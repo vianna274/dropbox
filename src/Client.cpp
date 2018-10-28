@@ -154,9 +154,9 @@ void Client::eventsInotify(int* fd){
 				string filename(event->name);
 				string path = syncDirPath + filename;
 				vector<FileRecord> tempFiles = this->getFileList(this->getSyncDirPath());
-				FileRecord newFile = this->getRecord(tempFiles, filename);
 				if(event->mask & IN_MOVED_TO){
-					this->sendFile(this->socket, path.c_str(), newFile);
+					FileRecord newRecord = this->sendFileClient(this->socket, path.c_str());
+					this->updateFileRecord(newRecord);
 				}
 			
 				if(event->mask & IN_MOVED_FROM || event->mask & IN_DELETE){
@@ -166,7 +166,8 @@ void Client::eventsInotify(int* fd){
 		
 				if(event->mask & IN_CLOSE_WRITE){
 					this->sendDeleteFile(this->socket, filename.c_str());
-					this->sendFile(this->socket, path.c_str(), newFile);
+					FileRecord newRecord = this->sendFileClient(this->socket, path.c_str());
+					this->updateFileRecord(newRecord);
 				} 
 	
 			i += EVENT_SIZE + event->len;

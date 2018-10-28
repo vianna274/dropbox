@@ -141,6 +141,52 @@ void Operations::sendFile(WrapperSocket *socket, string filePath){
 	file.close();
 }
 
+FileRecord Operations::sendFileClient(WrapperSocket *socket, string filePath){
+
+	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
+	struct stat buffer;   
+  	if(stat(filePath.c_str(), &buffer) != 0){
+		  cout << "Failed to send: File " << filePath << " does not exist." << endl;
+		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "");
+		  socket->send(&failed);
+		  exit(-1);
+	}
+	MessageData packet = make_packet(TYPE_SEND_FILE_NO_RECORD, 1, 1, -1, filename.c_str());
+	socket->send(&packet);
+
+	ifstream file;
+	file.open(filePath, ifstream::in | ifstream::binary);
+	file.seekg(0, file.end);
+	int fileSize = file.tellg();
+	file.seekg(0, file.beg);
+	int totalPackets = 1 + ((fileSize - 1) / MESSAGE_LEN); // ceil(x/y)
+	int lastPacketSize = fileSize % MESSAGE_LEN;
+	int packetsSent = 0;
+	int filePointer = 0;
+	int packetSize = MESSAGE_LEN;
+	char payload[MESSAGE_LEN];
+	cout << "Uploading " << filePath << " Size: " << fileSize << " NumPackets: " << totalPackets << endl;
+
+	while (packetsSent < totalPackets){
+		file.seekg(filePointer, file.beg);
+		filePointer += MESSAGE_LEN;
+		if(packetsSent == totalPackets - 1) packetSize = lastPacketSize;
+		file.read(payload, packetSize);
+		MessageData packet = make_packet(TYPE_DATA, packetsSent + 1, totalPackets, packetSize, payload);
+		socket->send(&packet);
+		packetsSent++;
+	}
+	file.close();
+
+	return this->receiveFileRecord(socket);
+}
+
+FileRecord Operations::receiveFileRecord(WrapperSocket * socket) {
+	MessageData * message = socket->receive(TIMEOUT_OFF);
+	FileRecord * fileRecord = (FileRecord*)message->payload;
+	return *fileRecord;
+}
+
 vector<FileRecord> Operations::receiveFileList(WrapperSocket * socket) {
 	MessageData *unconvertedFiles;
 	FileRecord record;
