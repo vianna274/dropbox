@@ -70,7 +70,7 @@ MessageData* WrapperSocket::receive(int timeout) {
     struct pollfd fd;
     fd.fd = this->localSocketHandler;
     fd.events = POLLIN;
-    int ret = poll(&fd, 1, 500);
+    int ret = poll(&fd, 1, 20000);
     switch(ret) {
       case -1: printf("Error\n");
         return NULL;
