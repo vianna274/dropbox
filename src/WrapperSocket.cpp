@@ -101,9 +101,7 @@ MessageData* WrapperSocket::receive(int timeout) {
       break;
     if (data->socketSeq == 0)
       this->socketSeq = 0;
-    if (data->socketSeq == this->socketSeq)
-      receivedCorrectly = true;
-    if (data->type != TYPE_ACK) {
+    if (data->socketSeq == this->socketSeq && data->type != TYPE_ACK) {
       MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
       this->sendAck(&message);
       this->socketSeq++;
