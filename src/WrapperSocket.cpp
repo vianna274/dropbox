@@ -85,22 +85,33 @@ MessageData* WrapperSocket::receive(int timeout) {
 
   char* msg = new char[PACKET_LEN];
   memset(msg, 0, PACKET_LEN);
+  bool receivedCorrectly = false;
+  MessageData * data;
+  while(!receivedCorrectly) {
 
-  int msgSize = recvfrom(this->localSocketHandler, (void *) msg, 
-    PACKET_LEN, 0, (struct sockaddr *) &this->remoteSocketAddr, &this->remoteSocketLen);
-  if (msgSize < 0) {
-    fprintf(stderr, "Error on receiving\n");
-    exit(1);
+    int msgSize = recvfrom(this->localSocketHandler, (void *) msg, 
+      PACKET_LEN, 0, (struct sockaddr *) &this->remoteSocketAddr, &this->remoteSocketLen);
+    if (msgSize < 0) {
+      fprintf(stderr, "Error on receiving\n");
+      exit(1);
+    }
+
+    data = (MessageData *) msg;
+    if (data->socketSeq == -1)
+      break;
+    if (data->socketSeq == 0)
+      this->socketSeq = 0;
+    if (data->socketSeq == this->socketSeq)
+      receivedCorrectly = true;
+    if (data->type != TYPE_ACK) {
+      MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
+      this->sendAck(&message);
+      this->socketSeq++;
+      receivedCorrectly = true;
+    }
   }
 
-  MessageData * data = (MessageData *) msg;
-  if (data->socketSeq == 0)
-    this->socketSeq = 0;
-  if(data->socketSeq == this->socketSeq && data->type != TYPE_ACK) {
-    MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
-    this->sendAck(&message);
-    this->socketSeq++;
-  }
+  
   // TODO delete msg
   return data;
 }
