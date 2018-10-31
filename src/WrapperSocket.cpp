@@ -12,6 +12,7 @@ WrapperSocket::WrapperSocket (string host, int port) {
     fprintf(stderr, "Error on creating socket");
     exit(1);
   }
+  this->socketSeq = 0;
   this->server = gethostbyname(host.c_str());
   this->remoteSocketAddr.sin_family = AF_INET;
   this->remoteSocketAddr.sin_port = htons(port);
@@ -27,6 +28,7 @@ WrapperSocket::~WrapperSocket(){
 }
 
 WrapperSocket::WrapperSocket (int port) {
+  this->socketSeq = 0;
   this->localSocketHandler = socket(AF_INET, SOCK_DGRAM, 0);
   if (this->localSocketHandler == ERROR) {
     fprintf(stderr, "Error on creating socket");
@@ -39,7 +41,7 @@ WrapperSocket::WrapperSocket (int port) {
 }
 
 void WrapperSocket::send(MessageData *packet) {
-    
+  set_socketSeq(packet, this->socketSeq);
   do{
 
     if (sendto(this->localSocketHandler, (void *)packet, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr),sizeof(struct sockaddr_in)) < 0) {
@@ -48,6 +50,7 @@ void WrapperSocket::send(MessageData *packet) {
     }
 
   }while(!this->waitAck(packet->seq));
+  this->socketSeq++;
   
 }
 
@@ -91,14 +94,10 @@ MessageData* WrapperSocket::receive(int timeout) {
   }
 
   MessageData *data = (MessageData *) msg;
-  //printf("Received a datagram Type: %d\n", data->type);
-  if(data->type == TYPE_ACK) {
-    //printf("Received ACK\n");
-  } else {
+  if(data->socketSeq == this->socketSeq && data->type != TYPE_ACK) {
     MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
-    //printf("Sending a ACK\n");
     this->sendAck(&message);
-    
+    this->socketSeq++;
   }
   // TODO delete msg
   return data;

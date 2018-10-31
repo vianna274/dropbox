@@ -22,6 +22,7 @@ struct _MessageData
     int seq;            // Sequence number 1...*
     int totalSize;      // Total number of packets that are going to be sent, used to check if it is the last packet
     int len;            // Lenght of the payload
+    int socketSeq;      // Socket sequence
     char payload[MESSAGE_LEN];  // Bytes sent
 };
 
@@ -35,6 +36,7 @@ typedef _MessageData MessageData;
  *  otherwise it will be used strcpy.
  */
 MessageData make_packet(int type, int seq, int totalSize, int len, const char *payload);
+void set_socketSeq(MessageData * data, int socketSeq);
 
 }
 

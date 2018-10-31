@@ -17,3 +17,7 @@ MessageData Dropbox::make_packet(int type, int seq, int totalSize, int len, cons
 
     return data;
 }
+
+void Dropbox::set_socketSeq(MessageData * data, int socketSeq) {
+    data->socketSeq = socketSeq;
+}
