@@ -73,7 +73,7 @@ MessageData* WrapperSocket::receive(int timeout) {
     struct pollfd fd;
     fd.fd = this->localSocketHandler;
     fd.events = POLLIN;
-    int ret = poll(&fd, 1, 20000);
+    int ret = poll(&fd, 1, 2000);
     switch(ret) {
       case -1: printf("Error\n");
         return NULL;
@@ -93,7 +93,9 @@ MessageData* WrapperSocket::receive(int timeout) {
     exit(1);
   }
 
-  MessageData *data = (MessageData *) msg;
+  MessageData * data = (MessageData *) msg;
+  if (data->socketSeq == 0)
+    this->socketSeq = 0;
   if(data->socketSeq == this->socketSeq && data->type != TYPE_ACK) {
     MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
     this->sendAck(&message);
