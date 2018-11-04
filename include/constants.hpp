@@ -7,6 +7,7 @@
 #define TIME_SEND_AGAIN 5000
 #define TIMEOUT_ON 1
 #define TIMEOUT_OFF 0
+#define TOTAL_TRIES 3
 
 #define FIRST_PORT 4001
 #define LAST_PORT 6000

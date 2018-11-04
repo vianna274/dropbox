@@ -40,18 +40,21 @@ WrapperSocket::WrapperSocket (int port) {
   this->portInt = port;
 }
 
-void WrapperSocket::send(MessageData *packet) {
+bool WrapperSocket::send(MessageData *packet) {
   set_socketSeq(packet, this->socketSeq);
+  int tries = 0;
   do{
 
     if (sendto(this->localSocketHandler, (void *)packet, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr),sizeof(struct sockaddr_in)) < 0) {
       fprintf(stderr, "Error on sending");
       exit(1);
     }
-
-  }while(!this->waitAck(packet->seq));
+  
+  }while(!this->waitAck(packet->seq) && ++tries < TOTAL_TRIES);
   this->socketSeq++;
   
+  if(tries == TOTAL_TRIES) return false;
+  return true;
 }
 
 bool WrapperSocket::waitAck(int seq) {

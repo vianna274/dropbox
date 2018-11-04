@@ -40,7 +40,7 @@ class WrapperSocket
     /*
     *    Send a packet
     */
-    void send(MessageData *packet);
+    bool send(MessageData *packet);
 
     /*
     *    Bind socket
