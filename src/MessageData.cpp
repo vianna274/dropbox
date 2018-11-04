@@ -9,6 +9,7 @@ MessageData Dropbox::make_packet(int type, int seq, int totalSize, int len, cons
     data.seq = seq;
     data.totalSize = totalSize;
     data.len = len;
+    data.socketSeq = -1;
     // File or record packets can't have \0 at the end of the payload
     if(type == TYPE_DATA || type == TYPE_SEND_FILE)
         memcpy(data.payload, payload, len);
@@ -16,4 +17,8 @@ MessageData Dropbox::make_packet(int type, int seq, int totalSize, int len, cons
         strncpy(data.payload, payload, MESSAGE_LEN);
 
     return data;
+}
+
+void Dropbox::set_socketSeq(MessageData * data, int socketSeq) {
+    data->socketSeq = socketSeq;
 }

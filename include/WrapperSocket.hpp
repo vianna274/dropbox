@@ -56,12 +56,14 @@ class WrapperSocket
   private:
     int localSocketHandler;
     int portInt;
+    int socketSeq;
     hostent *server;
     sockaddr_in remoteSocketAddr;
     sockaddr_in localSocketAddr;
     socklen_t remoteSocketLen;
     void sendAck(MessageData *ack);
     bool waitAck(int seq);
+    int getPort() { return portInt; }
 
 };
 
