@@ -3,7 +3,7 @@
 using namespace std;
 using namespace Dropbox; 
 
-Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToBackups(BACKUPS_PORT), talkToPrimary()
+Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToBackupsSocket(BACKUPS_PORT), talkToPrimary()
 {
     this->isMain = true;
     this->ipLocal = ipLocal;
@@ -14,7 +14,7 @@ Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToBacku
     initializePorts();
 }
 
-Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT), listenToBackups(BACKUPS_PORT), talkToPrimary(ipMain, BACKUPS_PORT)
+Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT), listenToBackupsSocket(BACKUPS_PORT), talkToPrimary(ipMain, BACKUPS_PORT)
 {
     this->isMain = false;
     this->ipLocal = ipLocal;
@@ -27,14 +27,54 @@ Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectC
 
 void Server::run(){
 
+    thread listenToBackupsThread(&Server::listenToBackups, this);
+    listenToBackupsThread.detach();
+    
     while(true){
-        connectNewClient();
+        if(this->isMain){
+            connectNewClient();
+        }
+        else{
+            MessageData packet = make_packet(TYPE_PING, 1, 1, -1, "");
+            bool isPrimaryAlive = this->talkToPrimary.send(&packet);
+            if(!isPrimaryAlive){
+                // começa eleição!!!!!!!!!!!!!!
+            }
+            this_thread::sleep_for(chrono::milliseconds(3000));
+        }
     }
 }
 
 Server::~Server(){
     for(User *user : users){
         delete user;
+    }
+}
+
+void Server::makeConnection(){
+    MessageData packet = make_packet(TYPE_MAKE_BACKUP, 1, 1, -1, ipLocal.c_str());
+
+    talkToPrimary.send(&packet);
+}
+
+void Server::listenToBackups(){
+    string ipDoBackup;
+    WrapperSocket *talkToBackup;
+    while(true){
+        MessageData *data = listenToBackupsSocket.receive(TIMEOUT_OFF);
+        switch (data->type)
+        {
+            case TYPE_MAKE_BACKUP:
+                ipDoBackup = string(data->payload);
+                talkToBackup = new WrapperSocket(ipDoBackup, BACKUPS_PORT);
+                this->backupsSockets.push_back(talkToBackup);
+                break;
+            case TYPE_PING:
+                break;
+            default:
+                cout << "PACOTE INCORRETO!" << endl;
+                break;
+        }
     }
 }
 
