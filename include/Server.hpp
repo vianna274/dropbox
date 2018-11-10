@@ -53,7 +53,7 @@ class Server : public Operations
 
   private:
     WrapperSocket connectClientSocket;
-    WrapperSocket listenToBackupsSocket;
+    WrapperSocket listenToServersSocket;
     WrapperSocket talkToPrimary;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
@@ -133,7 +133,7 @@ class Server : public Operations
      */
     void sendFileRecord(WrapperSocket * socket, string filename, User * user);
     void makeConnection();
-    void listenToBackups();
+    void listenToServers();
 };
 
 }
