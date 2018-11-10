@@ -3,7 +3,7 @@
 using namespace std;
 using namespace Dropbox; 
 
-Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToBackupsSocket(BACKUPS_PORT), talkToPrimary()
+Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToServersSocket(BACKUPS_PORT), talkToPrimary()
 {
     this->isMain = true;
     this->ipLocal = ipLocal;
@@ -15,7 +15,7 @@ Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToBacku
     initializePorts();
 }
 
-Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT), listenToBackupsSocket(BACKUPS_PORT), talkToPrimary(ipMain, BACKUPS_PORT)
+Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT), listenToServersSocket(BACKUPS_PORT), talkToPrimary(ipMain, BACKUPS_PORT)
 {
     this->isMain = false;
     this->ipLocal = ipLocal;
@@ -29,8 +29,9 @@ Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectC
 
 void Server::run(){
 
-    thread listenToBackupsThread(&Server::listenToBackups, this);
-    listenToBackupsThread.detach();
+    thread listenToServersThread(&Server::listenToServers, this);
+    listenToServersThread.detach();
+
     if(!this->isMain) {
         this->makeConnection();
     }
@@ -71,11 +72,11 @@ void Server::makeConnection(){
     talkToPrimary.send(&packet);
 }
 
-void Server::listenToBackups(){
+void Server::listenToServers(){
     string ipDoBackup;
     WrapperSocket *talkToBackup;
     while(true){
-        MessageData *data = listenToBackupsSocket.receive(TIMEOUT_OFF);
+        MessageData *data = listenToServersSocket.receive(TIMEOUT_OFF);
         switch (data->type)
         {
             case TYPE_MAKE_BACKUP:
@@ -91,6 +92,8 @@ void Server::listenToBackups(){
                 cout << "CREATING USER with " << string(data->payload) << endl;
                 this->usersIp.push_back(string(data->payload));
                 break;
+            
+            //case de propagar coisas 
             default:
                 cout << "PACOTE INCORRETO! " << data->type << endl;
                 break;
