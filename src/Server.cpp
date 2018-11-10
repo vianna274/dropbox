@@ -101,7 +101,7 @@ void Server::connectNewClient()
     MessageData *d = connectClientSocket.receive(TIMEOUT_OFF);
     
     if (d->type == TYPE_MAKE_CONNECTION) {
-        string username(d->payload);
+        string username(d->username);
         User *user = getUser(username);
         if(user == nullptr){
             user = new User(username, rootDir+username+"/");
