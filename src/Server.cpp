@@ -128,25 +128,27 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
     bool exit = false;
     FileRecord * temp = NULL;
     FileRecord fileTemp;
-    vector<FileRecord> tempFiles = this->getFileList(user->getDirPath());
+    vector<FileRecord> tempFiles = user->getFileRecords();
 	while(!exit){
 		MessageData *data = socket->receive(TIMEOUT_OFF);
         user->lockDevices();
         switch(data->type){
             case TYPE_REQUEST_DOWNLOAD:
-                tempFiles = this->getFileList(user->getDirPath());
+                tempFiles = user->getFileRecords();
                 fileTemp = this->getRecord(tempFiles, string(data->payload));
                 sendFile(socket, user->getDirPath() + string(data->payload), fileTemp);
                 break;
             case TYPE_DELETE:
                 deleteFile(user->getDirPath() + string(data->payload));
+                user->removeFileRecord(string(data->payload));
                 break;
             case TYPE_LIST_SERVER:
                 sendFileList(socket, getFileList(user->getDirPath()));
                 break;
             case TYPE_SEND_FILE_NO_RECORD:
                 receiveFile(socket, string(data->payload), user->getDirPath());
-                sendFileRecord(socket, string(data->payload), user->getDirPath());
+                user->updateFileRecord(this->getRecord(this->getFileList(user->getDirPath()), string(data->payload)));
+                sendFileRecord(socket, string(data->payload), user);
                 break;
             case TYPE_REQUEST_UPLOAD_ALL:
                 sendUploadAll(socket, user->getDirPath(), getFileList(user->getDirPath()));
@@ -165,8 +167,8 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
     delete socket;
 }
 
-void Server::sendFileRecord(WrapperSocket * socket, string filename, string dirPath) {
-    FileRecord record = this->getRecord(this->getFileList(dirPath), filename);
+void Server::sendFileRecord(WrapperSocket * socket, string filename, User * user) {
+    FileRecord record = this->getRecord(user->getFileRecords(), filename);
     MessageData packet = make_packet(TYPE_DATA, 1, 1, sizeof(FileRecord), (char*)&record);
     socket->send(&packet);
 }

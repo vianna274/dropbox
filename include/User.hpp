@@ -60,6 +60,16 @@ namespace Dropbox
             */
             void lockDevices() { this->mt.lock(); };
             void unlockDevices() { this->mt.unlock(); };
+            vector<FileRecord> getFileRecords();
+            /**
+             * Remove the file record of filename from the list
+             */
+            void removeFileRecord(string filename);
+
+            /**
+             * Update filerecord on the list
+             */
+            void updateFileRecord(FileRecord newFile);
     };
 }
 #endif

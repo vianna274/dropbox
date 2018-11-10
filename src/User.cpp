@@ -28,6 +28,31 @@ void User::createUserDir(){
     } 
 }
 
+vector<FileRecord> User::getFileRecords() {
+    return this->fileRecords;
+}
+
+void User::removeFileRecord(string filename) {
+	vector<FileRecord>::iterator it;
+	for(it = this->fileRecords.begin(); it != this->fileRecords.end(); it++) {
+		if (string(it->filename) == filename) {
+			this->fileRecords.erase(it);
+			return;
+		}
+	}
+}
+
+void User::updateFileRecord(FileRecord newFile) {
+	vector<FileRecord>::iterator it;
+	for(it = this->fileRecords.begin(); it != this->fileRecords.end(); it++) {
+		if (string(it->filename) == string(newFile.filename)) {
+			*it = newFile;
+			return;
+		}
+	}
+	this->fileRecords.push_back(newFile);
+}
+
 string User::getUsername(){
     return this->username;
 }

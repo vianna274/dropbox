@@ -122,7 +122,7 @@ class Server : public Operations
     /**
      * Sends the file's filerecord that's within the dirPath through the given socket
      */
-    void sendFileRecord(WrapperSocket * socket, string filename, string dirPath);
+    void sendFileRecord(WrapperSocket * socket, string filename, User * user);
 };
 
 }
