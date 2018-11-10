@@ -40,7 +40,9 @@ namespace Dropbox
 
         private:
             string username;
+            string localIp;
             Dropbox::WrapperSocket *socket;
+            Dropbox::WrapperSocket *listenToMaster;
             string syncDirPath;
             mutex mtx;
             vector<FileRecord> fileRecords;
@@ -55,7 +57,7 @@ namespace Dropbox
             void createSyncDir();
 
         public:
-            Client(string username, string serverAddr, int serverDistributorPort);
+            Client(string username, string serverAddr, int serverDistributorPort, string localIp);
             ~Client();
 
             string getUsername() { return username; }
@@ -112,6 +114,7 @@ namespace Dropbox
             string getSyncDirPath() { return syncDirPath; }
             void lockMutex() { this->mtx.lock(); };
             void unlockMutex() { this->mtx.unlock(); };
+            void listenMaster();
     };
 }
 

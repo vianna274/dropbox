@@ -9,6 +9,7 @@ Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToServe
     this->ipLocal = ipLocal;
     this->ipMain = ipLocal;
     this->backups = {};
+    this->usersIp = {};
     this->backupsSockets = {};
     initializeUsers();
     initializePorts();
@@ -20,6 +21,7 @@ Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectC
     this->ipLocal = ipLocal;
     this->ipMain = ipMain;
     this->backups = backups;
+    this->usersIp = {};
     this->backupsSockets = {};
     initializeUsers();
     initializePorts();
@@ -30,7 +32,7 @@ void Server::run(){
     thread listenToServersThread(&Server::listenToServers, this);
     listenToServersThread.detach();
 
-    if(!this->isMain){
+    if(!this->isMain) {
         this->makeConnection();
     }
     while(true){
@@ -41,7 +43,8 @@ void Server::run(){
             MessageData packet = make_packet(TYPE_PING, 1, 1, -1, "");
             bool isPrimaryAlive = this->talkToPrimary.send(&packet);
             if(!isPrimaryAlive){
-                // começa eleição!!!!!!!!!!!!!!
+                this->isMain = true;
+                this->propagateNewBoss();
             }
             this_thread::sleep_for(chrono::milliseconds(3000));
         }
@@ -51,6 +54,14 @@ void Server::run(){
 Server::~Server(){
     for(User *user : users){
         delete user;
+    }
+}
+
+void Server::propagateNewBoss() {
+    for (string ip : this->usersIp) {
+        WrapperSocket userSocket(ip, 10000);
+        MessageData packet = make_packet(TYPE_NEW_BOSS, 1, 1, -1, this->ipLocal.c_str());
+        userSocket.send(&packet);
     }
 }
 
@@ -68,16 +79,22 @@ void Server::listenToServers(){
         switch (data->type)
         {
             case TYPE_MAKE_BACKUP:
+                cout << "MAKE" << endl;
                 ipDoBackup = string(data->payload);
                 talkToBackup = new WrapperSocket(ipDoBackup, BACKUPS_PORT);
                 this->backupsSockets.push_back(talkToBackup);
                 break;
             case TYPE_PING:
+                cout << "PINGING" << endl;
+                break;
+            case TYPE_CREATE_USER:
+                cout << "CREATING USER with " << string(data->payload) << endl;
+                this->usersIp.push_back(string(data->payload));
                 break;
             
             //case de propagar coisas 
             default:
-                cout << "PACOTE INCORRETO!" << endl;
+                cout << "PACOTE INCORRETO! " << data->type << endl;
                 break;
         }
     }
@@ -146,7 +163,8 @@ void Server::connectNewClient()
     MessageData *d = connectClientSocket.receive(TIMEOUT_OFF);
     
     if (d->type == TYPE_MAKE_CONNECTION) {
-        string username(d->payload);
+        string username(d->username);
+        string userIp(d->payload);
         User *user = getUser(username);
         if(user == nullptr){
             user = new User(username, rootDir+username+"/");
@@ -171,9 +189,17 @@ void Server::connectNewClient()
         user->unlockDevices();
 
         cout << "User " << user->getUsername() << " connected on port " << newPort << ". " << "Device " << user->getNumDevicesConnected() << "/" << MAX_DEVICES << endl; 
-
+        this->propagateConnection(username, userIp);
         thread listenToClientThread(&Server::listenToClient, this, socket, user);
         listenToClientThread.detach();
+    }
+}
+
+void Server::propagateConnection(string username, string userIp)
+{
+    MessageData packet = make_packet(TYPE_CREATE_USER, 1, 1, -1, userIp.c_str(), username.c_str());
+    for(WrapperSocket * socket : this->backupsSockets) {
+        socket->send(&packet);
     }
 }
 

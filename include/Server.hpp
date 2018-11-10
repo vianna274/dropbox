@@ -58,6 +58,7 @@ class Server : public Operations
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
     vector<string> backups;
+    vector<string> usersIp;
     vector<WrapperSocket*> backupsSockets;
     string ipLocal;
     string ipMain;
@@ -134,6 +135,10 @@ class Server : public Operations
     void sendFileRecord(WrapperSocket * socket, string filename, User * user);
     void makeConnection();
     void listenToServers();
+    
+    void propagateConnection(string username, string userIp);
+    void propagateNewBoss();
+
 };
 
 }

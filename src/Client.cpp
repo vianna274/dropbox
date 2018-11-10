@@ -8,11 +8,12 @@ using namespace std;
 using namespace Dropbox;
 
 
-Client::Client (string username, string serverAddr, int serverDistributorPort) : username(username), syncDirPath("/tmp/sync_dir_"+username+"/")
+Client::Client (string username, string serverAddr, int serverDistributorPort, string localIp) : username(username), syncDirPath("/tmp/sync_dir_"+username+"/")
 {
 	WrapperSocket socketToGetPort(serverAddr, serverDistributorPort);
-
-	MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, username.c_str());
+	this->username = username;
+	this->localIp = localIp;
+	MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, this->localIp.length(),this->localIp.c_str(), this->username.c_str());
 	socketToGetPort.send(&request);
 	
 	MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
@@ -25,9 +26,37 @@ Client::Client (string username, string serverAddr, int serverDistributorPort) :
 	}
 
 	get_sync_dir();
+	this->listenToMaster = new WrapperSocket(10000);
+	thread listenToMasterThread(&Client::listenMaster, this);
+	listenToMasterThread.detach();
 	thread askServerUpdatesThread(&Client::askServerUpdates, this);
 	askServerUpdatesThread.detach();
 	cout << "Connected Successfully." << endl;
+}
+
+void Client::listenMaster() {
+	while(1) {
+		cout << "Esperando alguem trocar o mestre" << endl;
+		MessageData * data = this->listenToMaster->receive(TIMEOUT_OFF);
+		cout << "Trocando server Master" << endl;
+		this->lockMutex();
+		if (data->type == TYPE_NEW_BOSS) {
+			cout << "NEW BOSS " << string(data->payload) << endl;
+			WrapperSocket socketToGetPort(string(data->payload), 9000);
+			MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, this->localIp.length(), this->localIp.c_str(), this->username.c_str());
+			socketToGetPort.send(&request);
+			MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
+			if(newPort->type == TYPE_MAKE_CONNECTION){
+				this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
+			} 
+			else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
+				cout << newPort->payload << endl;
+				std::exit(1);
+				}
+		}
+		this->unlockMutex();
+		cout << "Server trocado com sucesso, eu acho :D" << endl;
+	}
 }
 
 void Client::initializeInotify(int *fd, int *wd){
