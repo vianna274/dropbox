@@ -53,6 +53,8 @@ class Server : public Operations
 
   private:
     WrapperSocket connectClientSocket;
+    WrapperSocket listenToBackups;
+    WrapperSocket talkToPrimary;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
     vector<string> backups;

@@ -3,7 +3,7 @@
 using namespace std;
 using namespace Dropbox; 
 
-Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT)
+Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToBackups(BACKUPS_PORT), talkToPrimary()
 {
     this->isMain = true;
     this->ipLocal = ipLocal;
@@ -14,7 +14,7 @@ Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT)
     initializePorts();
 }
 
-Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT)
+Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT), listenToBackups(BACKUPS_PORT), talkToPrimary(ipMain, BACKUPS_PORT)
 {
     this->isMain = false;
     this->ipLocal = ipLocal;

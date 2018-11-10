@@ -6,6 +6,8 @@
 using namespace std;
 using namespace Dropbox;
 
+WrapperSocket::WrapperSocket(){}
+
 WrapperSocket::WrapperSocket (string host, int port) {
   this->localSocketHandler = socket(AF_INET, SOCK_DGRAM, 0);
   if (this->localSocketHandler == ERROR) {

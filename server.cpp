@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
 		}
 		server = new Server(ipLocal, ipMain, ipBackups);
 	}
+	
 	server->run();
 
 	delete server;
