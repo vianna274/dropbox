@@ -53,12 +53,12 @@ class Server : public Operations
 
   private:
     WrapperSocket connectClientSocket;
-    WrapperSocket listenToBackups;
+    WrapperSocket listenToBackupsSocket;
     WrapperSocket talkToPrimary;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
     vector<string> backups;
-    vector<WrapperSocket> backupsSockets;
+    vector<WrapperSocket*> backupsSockets;
     string ipLocal;
     string ipMain;
     bool isMain;
@@ -132,6 +132,8 @@ class Server : public Operations
      * Sends the file's filerecord that's within the dirPath through the given socket
      */
     void sendFileRecord(WrapperSocket * socket, string filename, User * user);
+    void makeConnection();
+    void listenToBackups();
 };
 
 }
