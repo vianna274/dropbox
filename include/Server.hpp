@@ -39,7 +39,8 @@ namespace Dropbox {
 class Server : public Operations
 {
   public:
-    Server();
+    Server(string ipLocal);
+    Server(string ipLocal, string ipMain, vector<string> backups);
     ~Server();
 
     /**
@@ -54,6 +55,12 @@ class Server : public Operations
     WrapperSocket connectClientSocket;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
+    vector<string> backups;
+    vector<WrapperSocket> backupsSockets;
+    string ipLocal;
+    string ipMain;
+    bool isMain;
+
 
     /**
      *  Return a Port not beign used.
