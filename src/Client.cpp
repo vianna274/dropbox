@@ -40,17 +40,18 @@ void Client::listenMaster() {
 		MessageData * data = this->listenToMaster->receive(TIMEOUT_OFF);
 		cout << "Trocando server Master" << endl;
 		this->lockMutex();
-		if (data->type == TYPE_MAKE_CONNECTION) {
+		if (data->type == TYPE_NEW_BOSS) {
+			cout << "NEW BOSS " << string(data->payload) << endl;
 			WrapperSocket socketToGetPort(string(data->payload), 9000);
-				MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, this->localIp.length(), this->localIp.c_str(), this->username.c_str());
-				socketToGetPort.send(&request);
-				MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
-				if(newPort->type == TYPE_MAKE_CONNECTION){
-					this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
-				} 
-				else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
-					cout << newPort->payload << endl;
-					std::exit(1);
+			MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, this->localIp.length(), this->localIp.c_str(), this->username.c_str());
+			socketToGetPort.send(&request);
+			MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
+			if(newPort->type == TYPE_MAKE_CONNECTION){
+				this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
+			} 
+			else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
+				cout << newPort->payload << endl;
+				std::exit(1);
 				}
 		}
 		this->unlockMutex();
