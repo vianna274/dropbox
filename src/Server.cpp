@@ -143,7 +143,7 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
                 user->removeFileRecord(string(data->payload));
                 break;
             case TYPE_LIST_SERVER:
-                sendFileList(socket, getFileList(user->getDirPath()));
+                sendFileList(socket, user->getFileRecords());
                 break;
             case TYPE_SEND_FILE_NO_RECORD:
                 receiveFile(socket, string(data->payload), user->getDirPath());

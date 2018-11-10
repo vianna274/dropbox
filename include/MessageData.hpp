@@ -24,6 +24,7 @@ struct _MessageData
     int len;            // Lenght of the payload
     int socketSeq;      // Socket sequence
     char payload[MESSAGE_LEN];  // Bytes sent
+    char username[30];
 };
 
 typedef _MessageData MessageData;
@@ -36,6 +37,7 @@ typedef _MessageData MessageData;
  *  otherwise it will be used strcpy.
  */
 MessageData make_packet(int type, int seq, int totalSize, int len, const char *payload);
+MessageData make_packet(int type, int seq, int totalSize, int len, const char *payload, const char *username);
 void set_socketSeq(MessageData * data, int socketSeq);
 
 }
