@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 			if (command == "UPLOAD"){
 				if(arguments.size() != 2) puts("Wrong size of command -- upload <file path>");
 				else {
-					client.sendFile(client.getSocket(), arguments[1]);
+					client.sendFile(client.getSocket(), arguments[1], client.getUsername());
 				}
 
 			}else if (command == "DOWNLOAD"){
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 			}else if (command == "DELETE"){
 				if(arguments.size() != 2) puts("Wrong size of command -- delete <file path>");
 				else {
-					client.sendDeleteFile(client.getSocket(), arguments[1]);
+					client.sendDeleteFile(client.getSocket(), arguments[1], client.getUsername());
 				}
 
 			}else if (command == "LIST_SERVER"){
