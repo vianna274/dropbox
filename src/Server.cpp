@@ -29,7 +29,9 @@ void Server::run(){
 
     thread listenToBackupsThread(&Server::listenToBackups, this);
     listenToBackupsThread.detach();
-    
+    if(!this->isMain) {
+        this->makeConnection();
+    }
     while(true){
         if(this->isMain){
             connectNewClient();
@@ -65,11 +67,13 @@ void Server::listenToBackups(){
         switch (data->type)
         {
             case TYPE_MAKE_BACKUP:
+                cout << "MAKE" << endl;
                 ipDoBackup = string(data->payload);
                 talkToBackup = new WrapperSocket(ipDoBackup, BACKUPS_PORT);
                 this->backupsSockets.push_back(talkToBackup);
                 break;
             case TYPE_PING:
+                cout << "PINGING" << endl;
                 break;
             default:
                 cout << "PACOTE INCORRETO!" << endl;
