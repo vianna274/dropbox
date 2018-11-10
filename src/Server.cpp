@@ -3,8 +3,24 @@
 using namespace std;
 using namespace Dropbox; 
 
-Server::Server() : connectClientSocket(SERVER_PORT)
+Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT)
 {
+    this->isMain = true;
+    this->ipLocal = ipLocal;
+    this->ipMain = ipLocal;
+    this->backups = {};
+    this->backupsSockets = {};
+    initializeUsers();
+    initializePorts();
+}
+
+Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT)
+{
+    this->isMain = false;
+    this->ipLocal = ipLocal;
+    this->ipMain = ipMain;
+    this->backups = backups;
+    this->backupsSockets = {};
     initializeUsers();
     initializePorts();
 }
@@ -143,7 +159,7 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
                 user->removeFileRecord(string(data->payload));
                 break;
             case TYPE_LIST_SERVER:
-                sendFileList(socket, getFileList(user->getDirPath()));
+                sendFileList(socket, user->getFileRecords());
                 break;
             case TYPE_SEND_FILE_NO_RECORD:
                 receiveFile(socket, string(data->payload), user->getDirPath());

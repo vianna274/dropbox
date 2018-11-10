@@ -17,7 +17,22 @@ using namespace Dropbox;
 
 int main(int argc, char *argv[])
 {	
-	Server *server = new Server();
+	Server *server;
+	if(argc == 2){
+		// main
+		string ipLocal(argv[1]);
+		server = new Server(ipLocal);
+	}
+	else{
+		// backups
+		string ipLocal(argv[1]);
+		string ipMain(argv[2]);
+		vector<string> ipBackups;
+		for(int i = 3; i<argc; i++){
+			ipBackups.push_back(argv[i]);
+		}
+		server = new Server(ipLocal, ipMain, ipBackups);
+	}
 	server->run();
 
 	delete server;
