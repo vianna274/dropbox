@@ -148,6 +148,7 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 	while(!exit){
 		MessageData *data = socket->receive(TIMEOUT_OFF);
         user->lockDevices();
+        cout << string(data->username) << endl;
         switch(data->type){
             case TYPE_REQUEST_DOWNLOAD:
                 tempFiles = user->getFileRecords();

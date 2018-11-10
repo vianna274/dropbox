@@ -82,7 +82,7 @@ Client::~Client(){
 }
 
 void Client::askUpdate() {
-	MessageData request = make_packet(TYPE_REQUEST_UPDATE, 1 , 1, -1, "type_request_update");
+	MessageData request = make_packet(TYPE_REQUEST_UPDATE, 1 , 1, -1, "type_request_update", this->username.c_str());
 	this->socket->send(&request);
 	this->sendFileList(this->socket, this->fileRecords);
 	while(1) {
@@ -155,18 +155,18 @@ void Client::eventsInotify(int* fd){
 				string path = syncDirPath + filename;
 				vector<FileRecord> tempFiles = this->getFileList(this->getSyncDirPath());
 				if(event->mask & IN_MOVED_TO){
-					FileRecord newRecord = this->sendFileClient(this->socket, path.c_str());
+					FileRecord newRecord = this->sendFileClient(this->socket, path.c_str(), this->username);
 					this->updateFileRecord(newRecord);
 				}
 			
 				if(event->mask & IN_MOVED_FROM || event->mask & IN_DELETE){
-					this->sendDeleteFile(this->socket, filename.c_str());
+					this->sendDeleteFile(this->socket, filename.c_str(), this->username);
 					this->removeFileRecord(filename);
 				}  
 		
 				if(event->mask & IN_CLOSE_WRITE){
-					this->sendDeleteFile(this->socket, filename.c_str());
-					FileRecord newRecord = this->sendFileClient(this->socket, path.c_str());
+					this->sendDeleteFile(this->socket, filename.c_str(), this->username);
+					FileRecord newRecord = this->sendFileClient(this->socket, path.c_str(), this->username);
 					this->updateFileRecord(newRecord);
 				} 
 	

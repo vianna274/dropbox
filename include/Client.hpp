@@ -57,6 +57,8 @@ namespace Dropbox
         public:
             Client(string username, string serverAddr, int serverDistributorPort);
             ~Client();
+
+            string getUsername() { return username; }
             /**
              *  Send a TYPE_REQUEST_UPDATE packet for the server and deals with the response to syncronize the local dir with the server
              */

@@ -63,11 +63,14 @@ class Operations
      *  Send a TYPE_SEND_FILE_NO_RECORD and then send the whole file in TYPE_DATA packets
      */
     void sendFile(WrapperSocket * socket, string filePath);
+    void sendFile(WrapperSocket * socket, string filePath, string username);
 
     /**
      *  Send a TYPE_DELETE packet with the name of the file to delete
      */
     void sendDeleteFile(WrapperSocket * socket, string filename);
+
+    void sendDeleteFile(WrapperSocket * socket, string filename, string username);
 
     /**
      *  Send all the files on the dirPath with their file records
@@ -107,7 +110,7 @@ class Operations
     /**
      * Send a file and receives a filerecord
      */
-    FileRecord sendFileClient(WrapperSocket * socket, string filePath);
+    FileRecord sendFileClient(WrapperSocket * socket, string filePath, string username);
 };
 }
 
