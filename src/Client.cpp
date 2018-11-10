@@ -47,6 +47,7 @@ void Client::listenMaster() {
 			socketToGetPort.send(&request);
 			MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
 			if(newPort->type == TYPE_MAKE_CONNECTION){
+				cout << " EITA " << endl;
 				this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
 			} 
 			else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
@@ -112,11 +113,14 @@ Client::~Client(){
 
 void Client::askUpdate() {
 	MessageData request = make_packet(TYPE_REQUEST_UPDATE, 1 , 1, -1, "type_request_update", this->username.c_str());
-	this->socket->send(&request);
+	bool ass = this->socket->send(&request);
+	if (ass == false)
+		return;
 	this->sendFileList(this->socket, this->fileRecords);
 	while(1) {
-		MessageData * response = this->socket->receive(TIMEOUT_OFF);
+		MessageData * response = this->socket->receive(TIMEOUT_ON);
 		FileRecord fileRecord;
+		if (response == NULL) return;
 		switch (response->type) {
 			case TYPE_NOTHING_TO_SEND:
 				break;
