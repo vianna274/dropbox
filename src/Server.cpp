@@ -41,6 +41,7 @@ void Server::run(){
         else{
             MessageData packet = make_packet(TYPE_PING, 1, 1, -1, "");
             bool isPrimaryAlive = this->talkToPrimary.send(&packet);
+            cout << "Server ta: " << isPrimaryAlive << endl;
             if(!isPrimaryAlive){
                 this->isMain = true;
                 this->propagateNewBoss();
