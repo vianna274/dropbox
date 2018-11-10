@@ -35,6 +35,7 @@ class WrapperSocket
     *    Constructor for the server
     */
     WrapperSocket(int port);
+    WrapperSocket();
     ~WrapperSocket();
 
     /*
