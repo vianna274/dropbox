@@ -77,6 +77,10 @@ void Server::listenToServers(){
     WrapperSocket *talkToBackup;
     while(true){
         MessageData *data = listenToServersSocket.receive(TIMEOUT_OFF);
+        string username = string(data->username);
+        User * user = getUser(username);
+        cout << "Received " << string(data->payload) << " " << data->type << endl;
+        FileRecord fileRecord;
         switch (data->type)
         {
             case TYPE_MAKE_BACKUP:
@@ -91,8 +95,23 @@ void Server::listenToServers(){
             case TYPE_CREATE_USER:
                 cout << "CREATING USER with " << string(data->payload) << endl;
                 this->usersIp.push_back(string(data->payload));
+                if(user == nullptr) {
+                    cout << "Pushing new user" << endl;
+                    user = new User(username, rootDir+username+"/");
+                    users.push_back(user);
+                }
                 break;
-            
+            case TYPE_DELETE: 
+                cout << "DELETING" << endl;
+                deleteFile(user->getDirPath() + string(data->payload));
+                user->removeFileRecord(string(data->payload));
+                break;
+            case TYPE_SEND_FILE:
+                cout << "CREATING FILE" << endl;
+                fileRecord = *((FileRecord *)data->payload);
+                receiveFile(&listenToServersSocket, string(data->payload), user->getDirPath());
+                user->updateFileRecord(fileRecord);
+                break;
             //case de propagar coisas 
             default:
                 cout << "PACOTE INCORRETO! " << data->type << endl;
@@ -196,6 +215,24 @@ void Server::connectNewClient()
     }
 }
 
+void Server::propagateDelete(string filename, string username) 
+{
+    User * user = getUser(username);
+    for(WrapperSocket * socket : this->backupsSockets) {
+        this->sendDeleteFile(socket, filename.c_str(), username);
+        user->removeFileRecord(filename);
+    }
+}
+
+void Server::propagateFile(string filename, string username) 
+{
+    User * user = getUser(username);
+    for(WrapperSocket * socket : this->backupsSockets) {
+        FileRecord record = this->getRecord(user->getFileRecords(),filename);
+        this->sendFile(socket, user->getDirPath() + filename, record, username);
+    }
+}
+
 void Server::propagateConnection(string username, string userIp)
 {
     MessageData packet = make_packet(TYPE_CREATE_USER, 1, 1, -1, userIp.c_str(), username.c_str());
@@ -220,16 +257,16 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
 	while(!exit){
 		MessageData *data = socket->receive(TIMEOUT_OFF);
         user->lockDevices();
-        cout << string(data->username) << endl;
         switch(data->type){
             case TYPE_REQUEST_DOWNLOAD:
                 tempFiles = user->getFileRecords();
                 fileTemp = this->getRecord(tempFiles, string(data->payload));
-                sendFile(socket, user->getDirPath() + string(data->payload), fileTemp);
+                sendFile(socket, user->getDirPath() + string(data->payload), fileTemp, string(data->username));
                 break;
-            case TYPE_DELETE:
+            case TYPE_DELETE: 
                 deleteFile(user->getDirPath() + string(data->payload));
                 user->removeFileRecord(string(data->payload));
+                propagateDelete(string(data->payload), string(data->username));
                 break;
             case TYPE_LIST_SERVER:
                 sendFileList(socket, user->getFileRecords());
@@ -238,9 +275,10 @@ void Server::listenToClient(WrapperSocket *socket, User *user)
                 receiveFile(socket, string(data->payload), user->getDirPath());
                 user->updateFileRecord(this->getRecord(this->getFileList(user->getDirPath()), string(data->payload)));
                 sendFileRecord(socket, string(data->payload), user);
+                this->propagateFile(string(data->payload), string(data->username));
                 break;
             case TYPE_REQUEST_UPLOAD_ALL:
-                sendUploadAll(socket, user->getDirPath(), getFileList(user->getDirPath()));
+                sendUploadAll(socket, user->getDirPath(), getFileList(user->getDirPath()), user->getUsername());
                 break;
             case TYPE_REQUEST_UPDATE:
                 receiveAskUpdate(socket, user);
@@ -295,14 +333,14 @@ void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> cli
             case UPDATE:
                 cout << "Updating " << temp.filename << " " << ctime(&temp.modificationTime) << endl; 
                 this->sendDeleteFile(socket, string(temp.filename));
-                this->sendFile(socket, user->getDirPath() + string(temp.filename), temp);
+                this->sendFile(socket, user->getDirPath() + string(temp.filename), temp, user->getUsername());
                 break;
         }
     }
     // Send files that the client didn't have at the moment
     for(FileRecord serverFile: serverFiles) {
         cout << "Sending " << serverFile.filename << " " << serverFile.modificationTime << endl; 
-        this->sendFile(socket, user->getDirPath() + string(serverFile.filename), serverFile);
+        this->sendFile(socket, user->getDirPath() + string(serverFile.filename), serverFile, user->getUsername());
     }
 
 }

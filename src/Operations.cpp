@@ -40,12 +40,12 @@ void Operations::sendFileList(WrapperSocket *socket, vector<FileRecord> files){
 
 void Operations::receiveFile(WrapperSocket *socket, string filename, string dirPath) {
     string filePath = dirPath + filename;
-
+		cout << "Entrou" << endl;
     ofstream newFile;
-	newFile.open(filePath, ofstream::trunc | ofstream::binary);
-	if(!newFile.is_open()) {
-		cout << "Erro ao receber arquivo " << filePath << ". Não foi possível criar cópia local." << endl;
-		return;
+		newFile.open(filePath, ofstream::trunc | ofstream::binary);
+		if(!newFile.is_open()) {
+			cout << "Erro ao receber arquivo " << filePath << ". Não foi possível criar cópia local." << endl;
+			return;
     }
     int seqNumber, totalPackets;
     do{
@@ -65,17 +65,17 @@ FileRecord Operations::getRecord(vector<FileRecord> files, string filename) {
 	}
 }
 
-void Operations::sendFile(WrapperSocket *socket, string filePath, FileRecord fileRec){
+void Operations::sendFile(WrapperSocket *socket, string filePath, FileRecord fileRec, string username){
 
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
 		  cout << "Failed to send: File " << filePath << " does not exist." << endl;
-		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "");
+		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "", username.c_str());
 		  socket->send(&failed);
 		  return;
 	}
-	MessageData packet = make_packet(TYPE_SEND_FILE, 1, 1, sizeof(FileRecord), (char *)&fileRec);
+	MessageData packet = make_packet(TYPE_SEND_FILE, 1, 1, sizeof(FileRecord), (char *)&fileRec, username.c_str());
 	socket->send(&packet);
 
 	ifstream file;
@@ -96,7 +96,7 @@ void Operations::sendFile(WrapperSocket *socket, string filePath, FileRecord fil
 		filePointer += MESSAGE_LEN;
 		if(packetsSent == totalPackets - 1) packetSize = lastPacketSize;
 		file.read(payload, packetSize);
-		MessageData packet = make_packet(TYPE_DATA, packetsSent + 1, totalPackets, packetSize, payload);
+		MessageData packet = make_packet(TYPE_DATA, packetsSent + 1, totalPackets, packetSize, payload, username.c_str());
 		socket->send(&packet);
 		packetsSent++;
 	}
@@ -255,7 +255,7 @@ void Operations::receiveUploadAll(WrapperSocket * socket, string dirPath) {
 	}
 }
 
-void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<FileRecord> files) {
+void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<FileRecord> files, string username) {
 	if(files.empty()) {
 		this->sendNothing(socket);
         return;
@@ -264,7 +264,7 @@ void Operations::sendUploadAll(WrapperSocket * socket, string dirPath, vector<Fi
 	socket->send(&packet);
     int seq = 1;
     for(FileRecord record : files) {
-		this->sendFile(socket, dirPath + record.filename, record);
+		this->sendFile(socket, dirPath + record.filename, record, username);
         seq++;
     }
 	packet = make_packet(TYPE_SEND_UPLOAD_ALL_DONE, 1, 1, -1, "send_upload_all_done");

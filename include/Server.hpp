@@ -138,6 +138,8 @@ class Server : public Operations
     
     void propagateConnection(string username, string userIp);
     void propagateNewBoss();
+    void propagateFile(string filename, string username);
+    void propagateDelete(string filename, string username);
 
 };
 

@@ -57,7 +57,7 @@ class Operations
     /**
      *  Send a TYPE_SEND_FILE with the file record and then send the whole file in TYPE_DATA packets
      */
-    void sendFile(WrapperSocket * socket, string filePath, FileRecord fileRec);
+    void sendFile(WrapperSocket * socket, string filePath, FileRecord fileRec, string username);
 
     /**
      *  Send a TYPE_SEND_FILE_NO_RECORD and then send the whole file in TYPE_DATA packets
@@ -75,7 +75,7 @@ class Operations
     /**
      *  Send all the files on the dirPath with their file records
      */
-    void sendUploadAll(WrapperSocket * socket, string dirPath, vector<FileRecord> files);
+    void sendUploadAll(WrapperSocket * socket, string dirPath, vector<FileRecord> files, string username);
 
     /**
      *  Send a TYPE_DELETE_ALL packet
