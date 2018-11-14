@@ -55,6 +55,7 @@ class Server : public Operations
     WrapperSocket connectClientSocket;
     WrapperSocket listenToServersSocket;
     WrapperSocket talkToPrimary;
+    int status;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
     vector<string> backups;
@@ -140,6 +141,9 @@ class Server : public Operations
     void propagateNewBoss();
     void propagateFile(string filename, string username);
     void propagateDelete(string filename, string username);
+    void answer(string ip);
+    void becomeMain();
+    void sendHighersElection();
 
 };
 

@@ -72,6 +72,41 @@ void Server::makeConnection(){
     talkToPrimary.send(&packet);
 }
 
+void Server::answer(string ip) {
+    WrapperSocket socket(ip, 9000);
+    MessageData packet = make_packet(TYPE_ANSWER, 1, 1, ip.size(), ip.c_str());
+    socket.send(&packet);
+}
+
+void Server::becomeMain() {
+    this->status = STATUS_COORDINATOR;
+    for(string backupsIp: ip) {
+        WrapperSocket socket(ip, 9000);
+        MessageData packet = make_packet(TYPE_COORDINATOR, 1, 1, ipLocal.size(), ipLocal.c_str());
+        socket->send(&packet);
+    }
+    this->isMain = true;
+    this->propagateNewBoss();
+}
+
+vector<string> Server::getHighers() {
+    vector<string> highers;
+    
+    for(string ip : backupIps) {
+        if (ip > ipLocal)
+            highers.push_back(ip);
+    }
+    return highers;
+}
+
+void Server::sendHighersElection(vector<string> highers) {
+    for(string higher : highers) {
+        WrapperSocket socket(higher);
+        MessageData packet = make_packet(TYPE_ELECTION, 1, 1, higher.size(), higher);
+        socket->send(&packet);
+    }
+}
+
 void Server::listenToServers(){
     string ipDoBackup;
     WrapperSocket *talkToBackup;
@@ -79,10 +114,28 @@ void Server::listenToServers(){
         MessageData *data = listenToServersSocket.receive(TIMEOUT_OFF);
         string username = string(data->username);
         User * user = getUser(username);
+        string ip;
         cout << "Received " << string(data->payload) << " " << data->type << endl;
         FileRecord fileRecord;
         switch (data->type)
         {
+            case TYPE_COORDINATOR:
+                this->status = STATUS_NORMAL;
+                break;
+            case TYPE_ANSWER:
+                this->status = STATUS_WAITING_COORDINATOR;
+                // TIMEOUT ??
+                break;
+            case TYPE_ELECTION:
+                ip = string(data->payload);
+                this->answer(ip);
+                if (this->status == STATUS_NORMAL) {
+                    this->status = STATUS_ELECTION;
+                    if (this->getHighers().size() > 0)
+                        this->sendHighersElection();
+                    else
+                        this->becomeMain();
+                }
             case TYPE_MAKE_BACKUP:
                 cout << "MAKE" << endl;
                 ipDoBackup = string(data->payload);
