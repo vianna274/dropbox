@@ -52,8 +52,9 @@ class WrapperSocket
     *    Receive a datagram and sends and ack if it is necessary
     */
     MessageData *receive(int timeout);
+    MessageData *receive(int timeout, int time);
     int getPortInt();
-    
+
   private:
     int localSocketHandler;
     int portInt;
@@ -65,6 +66,7 @@ class WrapperSocket
     void sendAck(MessageData *ack);
     bool waitAck(int seq);
     int getPort() { return portInt; }
+    bool isElection(int type);
 
 };
 

@@ -10,7 +10,6 @@
 #include <poll.h>
 #include <arpa/inet.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <thread>
 #include <mutex>
@@ -52,9 +51,11 @@ class Server : public Operations
     const string rootDir = "/tmp/DropboxService/";
 
   private:
+    mutex electionMutex;
     WrapperSocket connectClientSocket;
     WrapperSocket listenToServersSocket;
-    WrapperSocket talkToPrimary;
+    WrapperSocket * talkToPrimary;
+    int status;
     bool portsAvailable[LAST_PORT - FIRST_PORT + 1];
     vector<User*> users;
     vector<string> backups;
@@ -134,13 +135,20 @@ class Server : public Operations
      */
     void sendFileRecord(WrapperSocket * socket, string filename, User * user);
     void makeConnection();
-    void listenToServers();
+    void listenToServers(WrapperSocket * socket);
     
     void propagateConnection(string username, string userIp);
     void propagateNewBoss();
     void propagateFile(string filename, string username);
     void propagateDelete(string filename, string username);
-
+    void answer(string ip);
+    void becomeMain();
+    vector<string> getHighers();
+    void startElection(vector<string> highers);
+    void sendHighersElection(vector<string> highers);
+    bool waitForAnswer();
+    bool waitForCoordinator();
+    void createNewPortBackup(WrapperSocket * socket);
 };
 
 }
