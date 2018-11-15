@@ -49,6 +49,7 @@ bool WrapperSocket::send(MessageData *packet) {
 
     if (sendto(this->localSocketHandler, (void *)packet, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr),sizeof(struct sockaddr_in)) < 0) {
       fprintf(stderr, "Error on sending");
+      cout << string(packet->payload) << packet->type << " " << string(packet->username) << endl;
       exit(1);
     }
   
@@ -102,6 +103,9 @@ MessageData* WrapperSocket::receive(int timeout) {
     }
 
     data = (MessageData *) msg;
+
+    cout << "Socket: " << this->socketSeq << " Data: " << data->socketSeq << endl;
+
     if (data->socketSeq == -1)
       break;
     if (data->socketSeq == 0)
@@ -109,7 +113,7 @@ MessageData* WrapperSocket::receive(int timeout) {
     if (data->socketSeq == this->socketSeq && data->type != TYPE_ACK) {
       MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
       this->sendAck(&message);
-      this->socketSeq++;
+      this->socketSeq = data->socketSeq + 1;
       receivedCorrectly = true;
     }
   }
@@ -119,12 +123,63 @@ MessageData* WrapperSocket::receive(int timeout) {
   return data;
 }
 
+MessageData* WrapperSocket::receive(int timeout, int time) {
+  if(timeout == TIMEOUT_ON) {
+    struct pollfd fd;
+    fd.fd = this->localSocketHandler;
+    fd.events = POLLIN;
+    int ret = poll(&fd, 1, time);
+    switch(ret) {
+      case -1: printf("Error\n");
+        return NULL;
+      case 0: 
+        return NULL;
+      default: break;
+    }
+  }
+
+  char* msg = new char[PACKET_LEN];
+  memset(msg, 0, PACKET_LEN);
+  bool receivedCorrectly = false;
+  MessageData * data;
+  while(!receivedCorrectly) {
+
+    int msgSize = recvfrom(this->localSocketHandler, (void *) msg, 
+      PACKET_LEN, 0, (struct sockaddr *) &this->remoteSocketAddr, &this->remoteSocketLen);
+    if (msgSize < 0) {
+      fprintf(stderr, "Error on receiving\n");
+      exit(1);
+    }
+    data = (MessageData *) msg;
+    cout << "Socket: " << this->socketSeq << " Data: " << data->socketSeq << endl;
+    if (data->socketSeq == -1)
+      break;
+    if (data->socketSeq == 0)
+      this->socketSeq = 0;
+    if (data->socketSeq == this->socketSeq && data->type != TYPE_ACK) {
+      MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
+      this->sendAck(&message);
+      this->socketSeq = data->socketSeq + 1;
+      receivedCorrectly = true;
+    }
+  }
+
+  
+  // TODO delete msg
+  return data;
+}
+
+bool WrapperSocket::isElection(int type)
+{
+  return false;
+  // return (type == TYPE_ANSWER || type == TYPE_COORDINATOR || type == TYPE_ELECTION);
+}
+
 void WrapperSocket::sendAck(MessageData *ack) {
   if (sendto(this->localSocketHandler, (void *)ack, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr), sizeof(struct sockaddr_in)) < 0) {
-    fprintf(stderr, "Error on sending");
+    fprintf(stderr, "Error on sending ACK");
     exit(1);
   }
-  //printf("ACK sent\n");
 }
 
 void WrapperSocket::bindSocket(int port) {

@@ -3,7 +3,7 @@
 using namespace std;
 using namespace Dropbox; 
 
-Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToServersSocket(BACKUPS_PORT), talkToPrimary()
+Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToServersSocket(BACKUPS_PORT)
 {
     this->isMain = true;
     this->ipLocal = ipLocal;
@@ -11,11 +11,12 @@ Server::Server(string ipLocal) : connectClientSocket(SERVER_PORT), listenToServe
     this->backups = {};
     this->usersIp = {};
     this->backupsSockets = {};
+    this->status = STATUS_NORMAL;
     initializeUsers();
     initializePorts();
 }
 
-Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT), listenToServersSocket(BACKUPS_PORT), talkToPrimary(ipMain, BACKUPS_PORT)
+Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectClientSocket(SERVER_PORT), listenToServersSocket(BACKUPS_PORT)
 {
     this->isMain = false;
     this->ipLocal = ipLocal;
@@ -23,13 +24,15 @@ Server::Server(string ipLocal, string ipMain, vector<string> backups) : connectC
     this->backups = backups;
     this->usersIp = {};
     this->backupsSockets = {};
+    this->status = STATUS_NOT_YET;
+    this->talkToPrimary = new WrapperSocket(ipMain, BACKUPS_PORT);
     initializeUsers();
     initializePorts();
 }
 
 void Server::run(){
 
-    thread listenToServersThread(&Server::listenToServers, this);
+    thread listenToServersThread(&Server::listenToServers, this, &(this->listenToServersSocket));
     listenToServersThread.detach();
 
     if(!this->isMain) {
@@ -39,13 +42,13 @@ void Server::run(){
         if(this->isMain){
             connectNewClient();
         }
-        else{
+        else if (this->status == STATUS_NORMAL) {
             MessageData packet = make_packet(TYPE_PING, 1, 1, -1, "");
-            bool isPrimaryAlive = this->talkToPrimary.send(&packet);
-            cout << "Server ta: " << isPrimaryAlive << endl;
-            if(!isPrimaryAlive){
-                this->isMain = true;
-                this->propagateNewBoss();
+            bool isPrimaryAlive = this->talkToPrimary->send(&packet);
+            cout << "Server ta: " << isPrimaryAlive << " " << this->status << endl;
+            if(!isPrimaryAlive && this->status == STATUS_NORMAL){
+                this->status = BEGIN_ELECTION;
+                cout << "Setou Begin_election" << endl;
             }
             this_thread::sleep_for(chrono::milliseconds(3000));
         }
@@ -69,30 +72,32 @@ void Server::propagateNewBoss() {
 void Server::makeConnection(){
     MessageData packet = make_packet(TYPE_MAKE_BACKUP, 1, 1, -1, ipLocal.c_str());
 
-    talkToPrimary.send(&packet);
+    talkToPrimary->send(&packet);
 }
 
 void Server::answer(string ip) {
     WrapperSocket socket(ip, 9000);
+    cout << "Enviando answer para " << ip << endl;
     MessageData packet = make_packet(TYPE_ANSWER, 1, 1, ip.size(), ip.c_str());
     socket.send(&packet);
 }
 
 void Server::becomeMain() {
-    this->status = STATUS_COORDINATOR;
-    for(string backupsIp: ip) {
+    for(string ip : this->backups) {
         WrapperSocket socket(ip, 9000);
+        cout << "Enviando Coordinator" << endl;
         MessageData packet = make_packet(TYPE_COORDINATOR, 1, 1, ipLocal.size(), ipLocal.c_str());
-        socket->send(&packet);
+        socket.send(&packet);
     }
     this->isMain = true;
+    this->status = STATUS_COORDINATOR;
     this->propagateNewBoss();
 }
 
 vector<string> Server::getHighers() {
     vector<string> highers;
     
-    for(string ip : backupIps) {
+    for(string ip : this->backups) {
         if (ip > ipLocal)
             highers.push_back(ip);
     }
@@ -101,46 +106,107 @@ vector<string> Server::getHighers() {
 
 void Server::sendHighersElection(vector<string> highers) {
     for(string higher : highers) {
-        WrapperSocket socket(higher);
-        MessageData packet = make_packet(TYPE_ELECTION, 1, 1, higher.size(), higher);
-        socket->send(&packet);
+        WrapperSocket socket(higher, 9000);
+        MessageData packet = make_packet(TYPE_ELECTION, 1, 1, ipLocal.size(), ipLocal.c_str());
+        socket.send(&packet);
     }
 }
 
-void Server::listenToServers(){
+void Server::startElection(vector<string> highers)
+{
+    this->status = STATUS_ELECTION;
+    cout << "Enviando Election para os maiores" << endl;
+    this->sendHighersElection(highers);
+    if (this->waitForAnswer()) {
+        if (this->waitForCoordinator())
+            return;
+        cout << "coordinator aqui" << endl;
+        this->becomeMain();
+    }
+    cout << "coordinator aqui 2" << endl;
+    this->becomeMain();
+}
+
+void Server::createNewPortBackup(WrapperSocket * socket)
+{
+    int newPort = getAvailablePort();
+    MessageData packet = make_packet(TYPE_MAKE_CONNECTION, 1, 1, -1, to_string(newPort).c_str());
+    WrapperSocket * newSocket = new WrapperSocket(newPort);
+    socket->send(&packet);
+    thread listenToBackupThread(&Server::listenToServers, this, newSocket);
+    listenToBackupThread.detach();
+}
+
+void Server::listenToServers(WrapperSocket * socket){
     string ipDoBackup;
     WrapperSocket *talkToBackup;
+    cout << "Listening to " << socket->getPortInt() << endl;
+    MessageData * data = NULL;
     while(true){
-        MessageData *data = listenToServersSocket.receive(TIMEOUT_OFF);
+        if (this->status == BEGIN_ELECTION) {
+            cout << "Entrou Begin_election" << endl;
+            this->status = STATUS_ELECTION;
+            if (this->getHighers().size() > 0) {
+                cout << "comecei eleicao 2" << endl;
+                this->startElection(this->getHighers());
+            }
+            else {
+                cout << "coordinator aqui 5" << endl;
+                this->becomeMain();
+            }
+        }
+        else 
+            data = socket->receive(TIMEOUT_ON, 100);
+        if (data == NULL)
+            continue;
         string username = string(data->username);
         User * user = getUser(username);
         string ip;
-        cout << "Received " << string(data->payload) << " " << data->type << endl;
         FileRecord fileRecord;
         switch (data->type)
         {
-            case TYPE_COORDINATOR:
+            case TYPE_MAKE_CONNECTION:
+                cout << "Criando novo Socket Ip: " << ipMain << " Port: " << string(data->payload) << endl;
+                this->talkToPrimary = new WrapperSocket(ipMain, stoi(data->payload));
+                this_thread::sleep_for(chrono::milliseconds(3000));
                 this->status = STATUS_NORMAL;
                 break;
+            case TYPE_COORDINATOR:
+                this->status = STATUS_NOT_YET;
+                cout << "Recebi Coordinator " << string(data->payload) << endl;
+                this->ipMain = string(data->payload);
+                this->talkToPrimary = new WrapperSocket(ipMain, 9000);
+                this_thread::sleep_for(chrono::milliseconds(3000));
+                this->makeConnection();
+                break;
             case TYPE_ANSWER:
-                this->status = STATUS_WAITING_COORDINATOR;
-                // TIMEOUT ??
+                cout << "Recebi Answer" << endl;
+                if(!this->waitForCoordinator()) {
+                    cout << "coordinator aqui 3" << endl;
+                    this->becomeMain();
+                }
                 break;
             case TYPE_ELECTION:
+                cout << "Recebi Election do" << string(data->payload) << endl;
                 ip = string(data->payload);
                 this->answer(ip);
                 if (this->status == STATUS_NORMAL) {
                     this->status = STATUS_ELECTION;
-                    if (this->getHighers().size() > 0)
-                        this->sendHighersElection();
-                    else
+                    if (this->getHighers().size() > 0) {
+                        cout << "comecei eleicao 1" << endl;
+                        this->startElection(this->getHighers());
+                    }
+                    else {
+                        cout << "coordinator aqui 4" << endl;
                         this->becomeMain();
+                    }
                 }
             case TYPE_MAKE_BACKUP:
-                cout << "MAKE" << endl;
+                cout << "Enviando nova porta para o Backup" << endl;
                 ipDoBackup = string(data->payload);
                 talkToBackup = new WrapperSocket(ipDoBackup, BACKUPS_PORT);
                 this->backupsSockets.push_back(talkToBackup);
+                this->createNewPortBackup(talkToBackup);
                 break;
             case TYPE_PING:
                 cout << "PINGING" << endl;
@@ -281,6 +347,7 @@ void Server::propagateFile(string filename, string username)
 {
     User * user = getUser(username);
     for(WrapperSocket * socket : this->backupsSockets) {
+        cout << "Propagating to: " << socket->getPortInt() << endl;
         FileRecord record = this->getRecord(user->getFileRecords(),filename);
         this->sendFile(socket, user->getDirPath() + filename, record, username);
     }
@@ -299,6 +366,38 @@ void Server::refuseOverLimitClient(User *user)
     string message = "Number of devices for user " + user->getUsername() + " were used up! Max number of devices : " + to_string(MAX_DEVICES);
     MessageData packet = make_packet(TYPE_REJECT_TO_LISTEN, 1, 1, -1, message.c_str());
     connectClientSocket.send(&packet);
+}
+
+bool Server::waitForAnswer()
+{
+    while(true) {
+        MessageData * res = this->listenToServersSocket.receive(TIMEOUT_ON);
+        if (res == NULL)
+            return false;
+        cout << res->type << endl;
+        if (res->type == TYPE_ANSWER) {
+            cout << "Recebi answer" << endl;
+            return true;
+        }
+    }
+}
+
+bool Server::waitForCoordinator()
+{
+    while(true) {
+        MessageData * res = this->listenToServersSocket.receive(TIMEOUT_ON);
+        if (res == NULL)
+            return false;
+        if (res->type == TYPE_COORDINATOR) {
+            this->status = STATUS_NOT_YET;
+            cout << "Recebi Coordinator " << string(res->payload) << endl;
+            this->ipMain = string(res->payload);
+            this->talkToPrimary = new WrapperSocket(ipMain, 9000);
+            this_thread::sleep_for(chrono::milliseconds(3000));
+            this->makeConnection();
+            return true;
+        }
+    }
 }
 
 void Server::listenToClient(WrapperSocket *socket, User *user)
