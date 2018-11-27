@@ -42,6 +42,7 @@ class WrapperSocket
     *    Send a packet
     */
     bool send(MessageData *packet);
+    bool send(MessageData *packet, int wait);
 
     /*
     *    Bind socket
@@ -59,14 +60,17 @@ class WrapperSocket
     int localSocketHandler;
     int portInt;
     int socketSeq;
+    MessageData * lastData;
     hostent *server;
     sockaddr_in remoteSocketAddr;
     sockaddr_in localSocketAddr;
     socklen_t remoteSocketLen;
     void sendAck(MessageData *ack);
     bool waitAck(int seq);
+    bool waitAck(int seq, int wait);
     int getPort() { return portInt; }
     bool isElection(int type);
+    bool isEqual(MessageData * a, MessageData * b);
 
 };
 

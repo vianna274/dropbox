@@ -149,6 +149,7 @@ class Server : public Operations
     bool waitForAnswer();
     bool waitForCoordinator();
     void createNewPortBackup(WrapperSocket * socket);
+    void removeFromBackup(vector<string> backups, string main);
 };
 
 }

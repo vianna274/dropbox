@@ -10,6 +10,7 @@ WrapperSocket::WrapperSocket(){}
 
 WrapperSocket::WrapperSocket (string host, int port) {
   this->localSocketHandler = socket(AF_INET, SOCK_DGRAM, 0);
+  this->lastData = NULL;
   if (this->localSocketHandler == ERROR) {
     fprintf(stderr, "Error on creating socket");
     exit(1);
@@ -31,6 +32,7 @@ WrapperSocket::~WrapperSocket(){
 
 WrapperSocket::WrapperSocket (int port) {
   this->socketSeq = 0;
+  this->lastData = NULL;
   this->localSocketHandler = socket(AF_INET, SOCK_DGRAM, 0);
   if (this->localSocketHandler == ERROR) {
     fprintf(stderr, "Error on creating socket");
@@ -40,6 +42,38 @@ WrapperSocket::WrapperSocket (int port) {
   this->remoteSocketLen = sizeof(struct sockaddr_in);
 
   this->portInt = port;
+}
+
+bool WrapperSocket::send(MessageData *packet, int wait) {
+  set_socketSeq(packet, this->socketSeq);
+  int tries = 0;
+  do{
+
+    if (sendto(this->localSocketHandler, (void *)packet, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr),sizeof(struct sockaddr_in)) < 0) {
+      fprintf(stderr, "Error on sending");
+      cout << string(packet->payload) << packet->type << " " << string(packet->username) << endl;
+      exit(1);
+    }
+  
+  }while(!this->waitAck(packet->seq, wait) && ++tries < TOTAL_TRIES);
+  this->socketSeq++;
+  
+  if(tries == TOTAL_TRIES) return false;
+  return true;
+}
+
+bool WrapperSocket::waitAck(int seq, int wait) {
+  bool acked = false;
+  while(!acked) {
+    MessageData *response = this->receive(TIMEOUT_ON, wait);
+    if(!response) {
+      return false;
+    } 
+    if(response->type == TYPE_ACK && response->seq == seq) { 
+      return true;
+    }
+  }
+  return false;
 }
 
 bool WrapperSocket::send(MessageData *packet) {
@@ -74,6 +108,18 @@ bool WrapperSocket::waitAck(int seq) {
   return false;
 }
 
+bool WrapperSocket::isEqual(MessageData * a, MessageData * b) {
+  if (a->type != b->type || a->seq != b->seq || a->totalSize != b->totalSize)
+    return false;
+  if (a->len != b->len || a->socketSeq != b->socketSeq)
+    return false;
+  if (string(a->payload).compare(string(b->payload)) != 0)
+    return false;
+  if (string(a->username).compare(string(b->username)) != 0)
+    return false;
+  return true;
+}
+
 MessageData* WrapperSocket::receive(int timeout) {
   if(timeout == TIMEOUT_ON) {
     struct pollfd fd;
@@ -104,8 +150,8 @@ MessageData* WrapperSocket::receive(int timeout) {
 
     data = (MessageData *) msg;
 
-    cout << "Socket: " << this->socketSeq << " Data: " << data->socketSeq << endl;
-
+    if (data->type != TYPE_ACK && this->lastData != NULL && this->isEqual(this->lastData, data))
+      continue;
     if (data->socketSeq == -1)
       break;
     if (data->socketSeq == 0)
@@ -118,7 +164,7 @@ MessageData* WrapperSocket::receive(int timeout) {
     }
   }
 
-  
+  this->lastData = data;
   // TODO delete msg
   return data;
 }
@@ -151,7 +197,7 @@ MessageData* WrapperSocket::receive(int timeout, int time) {
       exit(1);
     }
     data = (MessageData *) msg;
-    cout << "Socket: " << this->socketSeq << " Data: " << data->socketSeq << endl;
+
     if (data->socketSeq == -1)
       break;
     if (data->socketSeq == 0)

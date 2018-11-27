@@ -42,16 +42,45 @@ void Server::run(){
         if(this->isMain){
             connectNewClient();
         }
-        else if (this->status == STATUS_NORMAL) {
-            MessageData packet = make_packet(TYPE_PING, 1, 1, -1, "");
-            bool isPrimaryAlive = this->talkToPrimary->send(&packet);
-            cout << "Server ta: " << isPrimaryAlive << " " << this->status << endl;
-            if(!isPrimaryAlive && this->status == STATUS_NORMAL){
-                this->status = BEGIN_ELECTION;
-                cout << "Setou Begin_election" << endl;
+        else {
+            this->electionMutex.lock();
+            if (this->status == STATUS_NORMAL) {
+                this->electionMutex.unlock();
+                MessageData packet = make_packet(TYPE_PING, 1, 1, -1, "");
+                bool isPrimaryAlive = this->talkToPrimary->send(&packet, 100);
+                cout << "Server ta: " << isPrimaryAlive << " " << this->status << endl;
+                this->electionMutex.lock();
+                if(!isPrimaryAlive && this->status == STATUS_NORMAL){
+                    this->removeFromBackup(this->backups, this->ipMain);
+                    this->status = BEGIN_ELECTION;
+                    this->electionMutex.unlock();
+                    cout << "Setou Begin_election" << endl;
+                } else {
+                    this->electionMutex.unlock();
+                }
+                this_thread::sleep_for(chrono::milliseconds(3000));
             }
-            this_thread::sleep_for(chrono::milliseconds(3000));
+            this->electionMutex.unlock();
         }
+        
+    }
+}
+
+void Server::removeFromBackup(vector<string> backups, string main) {
+    vector<string>::iterator it = backups.begin();
+    vector<string> newBackups;
+    for(it; it != backups.end(); it++) {
+        cout << "trying to remove " << *it << " with " << main << endl;
+        if (main.compare(*it) == 0) {
+            cout << "removed" << endl;
+            // it = backups.erase(it);
+        } else {
+            newBackups.push_back(*it);
+        }
+    }
+    this->backups.clear();
+    for(string backup: newBackups) {
+        this->backups.push_back(backup);
     }
 }
 
@@ -63,6 +92,7 @@ Server::~Server(){
 
 void Server::propagateNewBoss() {
     for (string ip : this->usersIp) {
+        cout << "Propagando new Boss para " << ip << " com ip " << this->ipLocal << endl;
         WrapperSocket userSocket(ip, 10000);
         MessageData packet = make_packet(TYPE_NEW_BOSS, 1, 1, -1, this->ipLocal.c_str());
         userSocket.send(&packet);
@@ -79,7 +109,7 @@ void Server::answer(string ip) {
     WrapperSocket socket(ip, 9000);
     cout << "Enviando answer para " << ip << endl;
     MessageData packet = make_packet(TYPE_ANSWER, 1, 1, ip.size(), ip.c_str());
-    socket.send(&packet);
+    socket.send(&packet, 100);
 }
 
 void Server::becomeMain() {
@@ -87,16 +117,18 @@ void Server::becomeMain() {
         WrapperSocket socket(ip, 9000);
         cout << "Enviando Coordinator" << endl;
         MessageData packet = make_packet(TYPE_COORDINATOR, 1, 1, ipLocal.size(), ipLocal.c_str());
-        socket.send(&packet);
+        socket.send(&packet, 100);
     }
     this->isMain = true;
+    this->electionMutex.lock();
     this->status = STATUS_COORDINATOR;
+    this->electionMutex.unlock();
     this->propagateNewBoss();
 }
 
 vector<string> Server::getHighers() {
     vector<string> highers;
-    
+    removeFromBackup(this->backups, this->ipMain);
     for(string ip : this->backups) {
         if (ip > ipLocal)
             highers.push_back(ip);
@@ -106,6 +138,7 @@ vector<string> Server::getHighers() {
 
 void Server::sendHighersElection(vector<string> highers) {
     for(string higher : highers) {
+        cout << "Enviando para " << higher << endl;
         WrapperSocket socket(higher, 9000);
         MessageData packet = make_packet(TYPE_ELECTION, 1, 1, ipLocal.size(), ipLocal.c_str());
         socket.send(&packet);
@@ -114,11 +147,13 @@ void Server::sendHighersElection(vector<string> highers) {
 
 void Server::startElection(vector<string> highers)
 {
+    this->electionMutex.lock();
     this->status = STATUS_ELECTION;
+    this->electionMutex.unlock();
     cout << "Enviando Election para os maiores" << endl;
     this->sendHighersElection(highers);
     if (this->waitForAnswer()) {
-        if (this->waitForCoordinator())
+        if (this->waitForCoordinator() || this->status == STATUS_NOT_YET)
             return;
         cout << "coordinator aqui" << endl;
         this->becomeMain();
@@ -143,10 +178,12 @@ void Server::listenToServers(WrapperSocket * socket){
     cout << "Listening to " << socket->getPortInt() << endl;
     MessageData * data = NULL;
     while(true){
+        this->electionMutex.lock();
         if (this->status == BEGIN_ELECTION) {
             cout << "Entrou Begin_election" << endl;
             this->status = STATUS_ELECTION;
             if (this->getHighers().size() > 0) {
+                this->electionMutex.unlock();
                 cout << "comecei eleicao 2" << endl;
                 this->startElection(this->getHighers());
             }
@@ -155,8 +192,10 @@ void Server::listenToServers(WrapperSocket * socket){
                 this->becomeMain();
             }
         }
-        else 
-            data = socket->receive(TIMEOUT_ON, 100);
+        else {
+            this->electionMutex.unlock();
+            data = socket->receive(TIMEOUT_ON, 5);
+        }
         if (data == NULL)
             continue;
         string username = string(data->username);
@@ -169,19 +208,27 @@ void Server::listenToServers(WrapperSocket * socket){
                 cout << "Criando novo Socket Ip: " << ipMain << " Port: " << string(data->payload) << endl;
                 this->talkToPrimary = new WrapperSocket(ipMain, stoi(data->payload));
                 this_thread::sleep_for(chrono::milliseconds(3000));
+                this->electionMutex.lock();
                 this->status = STATUS_NORMAL;
+                this->electionMutex.unlock();
                 break;
             case TYPE_COORDINATOR:
+                this->electionMutex.lock();
                 this->status = STATUS_NOT_YET;
+                removeFromBackup(this->backups, this->ipMain);
+                this->electionMutex.unlock();
                 cout << "Recebi Coordinator " << string(data->payload) << endl;
                 this->ipMain = string(data->payload);
                 this->talkToPrimary = new WrapperSocket(ipMain, 9000);
                 this_thread::sleep_for(chrono::milliseconds(3000));
                 this->makeConnection();
+                this->electionMutex.lock();
+                this->status = STATUS_NORMAL;
+                this->electionMutex.unlock();
                 break;
             case TYPE_ANSWER:
-                cout << "Recebi Answer" << endl;
-                if(!this->waitForCoordinator()) {
+                cout << "Recebi Answer 2" << endl;
+                if(!this->waitForCoordinator() && this->status == STATUS_ELECTION) {
                     cout << "coordinator aqui 3" << endl;
                     this->becomeMain();
                 }
@@ -190,8 +237,10 @@ void Server::listenToServers(WrapperSocket * socket){
                 cout << "Recebi Election do" << string(data->payload) << endl;
                 ip = string(data->payload);
                 this->answer(ip);
+                this->electionMutex.lock();
                 if (this->status == STATUS_NORMAL) {
                     this->status = STATUS_ELECTION;
+                    this->electionMutex.unlock();
                     if (this->getHighers().size() > 0) {
                         cout << "comecei eleicao 1" << endl;
                         this->startElection(this->getHighers());
@@ -201,6 +250,8 @@ void Server::listenToServers(WrapperSocket * socket){
                         this->becomeMain();
                     }
                 }
+                this->electionMutex.unlock(); 
+                break;
             case TYPE_MAKE_BACKUP:
                 cout << "Enviando nova porta para o Backup" << endl;
                 ipDoBackup = string(data->payload);
@@ -371,12 +422,27 @@ void Server::refuseOverLimitClient(User *user)
 bool Server::waitForAnswer()
 {
     while(true) {
-        MessageData * res = this->listenToServersSocket.receive(TIMEOUT_ON);
+        MessageData * res = this->listenToServersSocket.receive(TIMEOUT_ON, 1500);
         if (res == NULL)
             return false;
         cout << res->type << endl;
         if (res->type == TYPE_ANSWER) {
-            cout << "Recebi answer" << endl;
+            cout << "Recebi answer 1" << endl;
+            return true;
+        }
+        if (res->type == TYPE_COORDINATOR) {
+            this->electionMutex.lock();
+            this->status = STATUS_NOT_YET;
+            removeFromBackup(this->backups, this->ipMain);
+            this->electionMutex.unlock();
+            cout << "Recebi Coordinator " << string(res->payload) << endl;
+            this->ipMain = string(res->payload);
+            this->talkToPrimary = new WrapperSocket(ipMain, 9000);
+            this_thread::sleep_for(chrono::milliseconds(3000));
+            this->makeConnection();
+            this->electionMutex.lock();
+            this->status = STATUS_NORMAL;
+            this->electionMutex.unlock();
             return true;
         }
     }
@@ -385,16 +451,22 @@ bool Server::waitForAnswer()
 bool Server::waitForCoordinator()
 {
     while(true) {
-        MessageData * res = this->listenToServersSocket.receive(TIMEOUT_ON);
+        MessageData * res = this->listenToServersSocket.receive(TIMEOUT_ON, 1500);
         if (res == NULL)
             return false;
         if (res->type == TYPE_COORDINATOR) {
+            this->electionMutex.lock();
             this->status = STATUS_NOT_YET;
+            removeFromBackup(this->backups, this->ipMain);
+            this->electionMutex.unlock();
             cout << "Recebi Coordinator " << string(res->payload) << endl;
             this->ipMain = string(res->payload);
             this->talkToPrimary = new WrapperSocket(ipMain, 9000);
             this_thread::sleep_for(chrono::milliseconds(3000));
             this->makeConnection();
+            this->electionMutex.lock();
+            this->status = STATUS_NORMAL;
+            this->electionMutex.unlock();
             return true;
         }
     }

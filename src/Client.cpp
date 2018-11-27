@@ -47,7 +47,6 @@ void Client::listenMaster() {
 			socketToGetPort.send(&request);
 			MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
 			if(newPort->type == TYPE_MAKE_CONNECTION){
-				cout << " EITA " << endl;
 				this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
 			} 
 			else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
@@ -57,6 +56,7 @@ void Client::listenMaster() {
 		}
 		// this->unlockMutex();
 		cout << "Server trocado com sucesso, eu acho :D" << endl;
+		this_thread::sleep_for(chrono::milliseconds(1000));
 	}
 }
 
