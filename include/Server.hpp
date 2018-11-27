@@ -47,11 +47,14 @@ class Server : public Operations
      */
     void run();
 
-    mutex portsMutex;
+    
     const string rootDir = "/tmp/DropboxService/";
 
   private:
     mutex electionMutex;
+    mutex propagationMutex;
+    mutex portsMutex;
+
     WrapperSocket connectClientSocket;
     WrapperSocket listenToServersSocket;
     WrapperSocket * talkToPrimary;

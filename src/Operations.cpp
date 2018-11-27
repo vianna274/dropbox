@@ -295,7 +295,7 @@ void Operations::sendDeleteAll(WrapperSocket * socket) {
 
 void Operations::deleteFile(string filepath) {
 	if(remove(filepath.c_str()) != 0 )
-		cout << "Error deleting file: " << filepath << endl;
+		cout << filepath << endl;
 }
 
 void Operations::deleteAll(vector<FileRecord> files, string dirPath) {

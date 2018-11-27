@@ -48,7 +48,7 @@ void Server::run(){
                 this->electionMutex.unlock();
                 MessageData packet = make_packet(TYPE_PING, 1, 1, -1, "");
                 bool isPrimaryAlive = this->talkToPrimary->send(&packet, 100);
-                cout << "Server ta: " << isPrimaryAlive << " " << this->status << endl;
+                //cout << "Server ta: " << isPrimaryAlive << " " << this->status << endl;
                 this->electionMutex.lock();
                 if(!isPrimaryAlive && this->status == STATUS_NORMAL){
                     this->removeFromBackup(this->backups, this->ipMain);
@@ -260,7 +260,7 @@ void Server::listenToServers(WrapperSocket * socket){
                 this->createNewPortBackup(talkToBackup);
                 break;
             case TYPE_PING:
-                cout << "PINGING" << endl;
+                //cout << "PINGING" << endl;
                 break;
             case TYPE_CREATE_USER:
                 cout << "CREATING USER with " << string(data->payload) << endl;
@@ -387,29 +387,35 @@ void Server::connectNewClient()
 
 void Server::propagateDelete(string filename, string username) 
 {
+    propagationMutex.lock();
     User * user = getUser(username);
     for(WrapperSocket * socket : this->backupsSockets) {
         this->sendDeleteFile(socket, filename.c_str(), username);
         user->removeFileRecord(filename);
     }
+    propagationMutex.unlock();
 }
 
 void Server::propagateFile(string filename, string username) 
 {
+    propagationMutex.lock();
     User * user = getUser(username);
     for(WrapperSocket * socket : this->backupsSockets) {
         cout << "Propagating to: " << socket->getPortInt() << endl;
         FileRecord record = this->getRecord(user->getFileRecords(),filename);
         this->sendFile(socket, user->getDirPath() + filename, record, username);
     }
+    propagationMutex.unlock();
 }
 
 void Server::propagateConnection(string username, string userIp)
-{
+{   
+    propagationMutex.lock();
     MessageData packet = make_packet(TYPE_CREATE_USER, 1, 1, -1, userIp.c_str(), username.c_str());
     for(WrapperSocket * socket : this->backupsSockets) {
         socket->send(&packet);
     }
+    propagationMutex.unlock();
 }
 
 void Server::refuseOverLimitClient(User *user)
