@@ -57,7 +57,6 @@ void Server::run(){
                     backupList.lock();
                     this->removeFromBackup(this->backups, this->ipMain);
                     backupList.unlock();
-                    cout << "Setou Begin_election" << endl;
                 } else {
                     this->electionMutex.unlock();
                 }
@@ -74,9 +73,7 @@ void Server::removeFromBackup(vector<string> backups, string main) {
     vector<string>::iterator it = backups.begin();
     vector<string> newBackups;
     for(it; it != backups.end(); it++) {
-        cout << "trying to remove " << *it << " with " << main << endl;
         if (main.compare(*it) == 0) {
-            cout << "removed" << endl;
             // it = backups.erase(it);
         } else {
             newBackups.push_back(*it);
@@ -96,7 +93,6 @@ Server::~Server(){
 
 void Server::propagateNewBoss() {
     for (string ip : this->usersIp) {
-        cout << "Propagando new Boss para " << ip << " com ip " << this->ipLocal << endl;
         WrapperSocket userSocket(ip, 10000);
         MessageData packet = make_packet(TYPE_NEW_BOSS, 1, 1, -1, this->ipLocal.c_str());
         userSocket.send(&packet);
@@ -112,7 +108,6 @@ void Server::makeConnection(){
 
 void Server::answer(string ip) {
     WrapperSocket socket(ip, 9000);
-    cout << "Enviando answer para " << ip << endl;
     MessageData packet = make_packet(TYPE_ANSWER, 1, 1, ip.size(), ip.c_str());
     socket.send(&packet, 100);
 }
@@ -121,7 +116,6 @@ void Server::becomeMain() {
     backupList.lock();
     for(string ip : this->backups) {
         WrapperSocket socket(ip, 9000);
-        cout << "Enviando Coordinator" << endl;
         MessageData packet = make_packet(TYPE_COORDINATOR, 1, 1, ipLocal.size(), ipLocal.c_str());
         socket.send(&packet, 100);
     }
@@ -147,7 +141,6 @@ vector<string> Server::getHighers() {
 
 void Server::sendHighersElection(vector<string> highers) {
     for(string higher : highers) {
-        cout << "Enviando para " << higher << endl;
         WrapperSocket socket(higher, 9000);
         MessageData packet = make_packet(TYPE_ELECTION, 1, 1, ipLocal.size(), ipLocal.c_str());
         socket.send(&packet);
@@ -159,15 +152,12 @@ void Server::startElection(vector<string> highers)
     this->electionMutex.lock();
     this->status = STATUS_ELECTION;
     this->electionMutex.unlock();
-    cout << "Enviando Election para os maiores" << endl;
     this->sendHighersElection(highers);
     if (this->waitForAnswer()) {
         if (this->waitForCoordinator() || this->status == STATUS_NOT_YET)
             return;
-        cout << "coordinator aqui" << endl;
         this->becomeMain();
     }
-    cout << "coordinator aqui 2" << endl;
     this->becomeMain();
 }
 
@@ -188,7 +178,6 @@ void Server::handleReceiveCoordinator(MessageData * res) {
     backupList.lock();
     removeFromBackup(this->backups, this->ipMain);
     backupList.unlock();
-    cout << "Recebi Coordinator " << string(res->payload) << endl;
     this->ipMain = string(res->payload);
     talkToPrimaryMtx.lock();
     this->talkToPrimary = new WrapperSocket(ipMain, 9000);
@@ -203,20 +192,16 @@ void Server::handleReceiveCoordinator(MessageData * res) {
 void Server::listenToServers(WrapperSocket * socket){
     string ipDoBackup;
     WrapperSocket *talkToBackup;
-    cout << "Listening to " << socket->getPortInt() << endl;
     MessageData * data = NULL;
     while(true){
         this->electionMutex.lock();
         if (this->status == BEGIN_ELECTION) {
-            cout << "Entrou Begin_election" << endl;
             this->status = STATUS_ELECTION;
             this->electionMutex.unlock();
             if (this->getHighers().size() > 0) {
-                cout << "comecei eleicao 2" << endl;
                 this->startElection(this->getHighers());
             }
             else {
-                cout << "coordinator aqui 5" << endl;
                 this->becomeMain();
             }
         }
@@ -233,7 +218,6 @@ void Server::listenToServers(WrapperSocket * socket){
         switch (data->type)
         {
             case TYPE_MAKE_CONNECTION:
-                cout << "Criando novo Socket Ip: " << ipMain << " Port: " << string(data->payload) << endl;
                 talkToPrimaryMtx.lock();
                 this->talkToPrimary = new WrapperSocket(ipMain, stoi(data->payload));
                 synchronize();
@@ -246,14 +230,11 @@ void Server::listenToServers(WrapperSocket * socket){
                 handleReceiveCoordinator(data);
                 break;
             case TYPE_ANSWER:
-                cout << "Recebi Answer 2" << endl;
                 if(!this->waitForCoordinator() && this->status == STATUS_ELECTION) {
-                    cout << "coordinator aqui 3" << endl;
                     this->becomeMain();
                 }
                 break;
             case TYPE_ELECTION:
-                cout << "Recebi Election do" << string(data->payload) << endl;
                 ip = string(data->payload);
                 this->answer(ip);
                 this->electionMutex.lock();
@@ -261,18 +242,15 @@ void Server::listenToServers(WrapperSocket * socket){
                     this->status = STATUS_ELECTION;
                     this->electionMutex.unlock();
                     if (this->getHighers().size() > 0) {
-                        cout << "comecei eleicao 1" << endl;
                         this->startElection(this->getHighers());
                     }
                     else {
-                        cout << "coordinator aqui 4" << endl;
                         this->becomeMain();
                     }
                 }
                 this->electionMutex.unlock(); 
                 break;
             case TYPE_MAKE_BACKUP:
-                cout << "Enviando nova porta para o Backup" << endl;
                 ipDoBackup = string(data->payload);
                 talkToBackup = new WrapperSocket(ipDoBackup, BACKUPS_PORT);
                 this->backupsSockets.push_back(talkToBackup);
@@ -282,21 +260,17 @@ void Server::listenToServers(WrapperSocket * socket){
                 //cout << "PINGING" << endl;
                 break;
             case TYPE_CREATE_USER:
-                cout << "CREATING USER with " << string(data->payload) << endl;
                 this->usersIp.push_back(string(data->payload));
                 if(user == nullptr) {
-                    cout << "Pushing new user" << endl;
                     user = new User(username, rootDir+username+"/");
                     users.push_back(user);
                 }
                 break;
             case TYPE_DELETE: 
-                cout << "DELETING" << endl;
                 deleteFile(user->getDirPath() + string(data->payload));
                 user->removeFileRecord(string(data->payload));
                 break;
             case TYPE_SEND_FILE:
-                cout << "CREATING FILE" << endl;
                 fileRecord = *((FileRecord *)data->payload);
                 receiveFile(&listenToServersSocket, string(data->payload), user->getDirPath());
                 user->updateFileRecord(fileRecord);
@@ -370,7 +344,6 @@ void Server::connectNewClient()
 {
 
     MessageData *d = connectClientSocket.receive(TIMEOUT_OFF);
-    cout << "Recebi algo na porta: " << connectClientSocket.getPortInt() << " tipo: " << d->type << endl;
     if (d->type == TYPE_MAKE_CONNECTION) {
         string username(d->username);
         string userIp(d->payload);
@@ -397,7 +370,6 @@ void Server::connectNewClient()
         user->addDevice(socket);
         user->unlockDevices();
 
-        cout << "User " << user->getUsername() << " connected on port " << newPort << ". " << "Device " << user->getNumDevicesConnected() << "/" << MAX_DEVICES << endl; 
         this->propagateConnection(username, userIp);
         thread listenToClientThread(&Server::listenToClient, this, socket, user);
         listenToClientThread.detach();
@@ -420,7 +392,6 @@ void Server::propagateFile(string filename, string username)
     propagationMutex.lock();
     User * user = getUser(username);
     for(WrapperSocket * socket : this->backupsSockets) {
-        cout << "Propagating to: " << socket->getPortInt() << endl;
         FileRecord record = this->getRecord(user->getFileRecords(),filename);
         this->sendFile(socket, user->getDirPath() + filename, record, username);
     }
@@ -452,7 +423,6 @@ bool Server::waitForAnswer()
             return false;
         cout << res->type << endl;
         if (res->type == TYPE_ANSWER) {
-            cout << "Recebi answer 1" << endl;
             return true;
         }
         if (res->type == TYPE_COORDINATOR) {
@@ -554,19 +524,16 @@ void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> cli
             case OK: 
                 break;
             case DELETE:
-                cout << "Deleting " <<  string(it->filename) << " from " << user->getUsername() << " local device." << endl;
                 this->sendDeleteFile(socket, string(it->filename));
                 break;
-            case UPDATE:
-                cout << "Updating " << temp.filename << " " << ctime(&temp.modificationTime) << endl; 
+            case UPDATE: 
                 this->sendDeleteFile(socket, string(temp.filename));
                 this->sendFile(socket, user->getDirPath() + string(temp.filename), temp, user->getUsername());
                 break;
         }
     }
     // Send files that the client didn't have at the moment
-    for(FileRecord serverFile: serverFiles) {
-        cout << "Sending " << serverFile.filename << " " << serverFile.modificationTime << endl; 
+    for(FileRecord serverFile: serverFiles) { 
         this->sendFile(socket, user->getDirPath() + string(serverFile.filename), serverFile, user->getUsername());
     }
 

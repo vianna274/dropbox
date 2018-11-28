@@ -40,11 +40,10 @@ void Operations::sendFileList(WrapperSocket *socket, vector<FileRecord> files){
 
 void Operations::receiveFile(WrapperSocket *socket, string filename, string dirPath) {
     string filePath = dirPath + filename;
-		cout << "Entrou" << endl;
+		
     ofstream newFile;
 		newFile.open(filePath, ofstream::trunc | ofstream::binary);
 		if(!newFile.is_open()) {
-			cout << "Erro ao receber arquivo " << filePath << ". Não foi possível criar cópia local." << endl;
 			return;
     }
     int seqNumber, totalPackets;
@@ -70,7 +69,6 @@ void Operations::sendFile(WrapperSocket *socket, string filePath, FileRecord fil
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
-		  cout << "Failed to send: File " << filePath << " does not exist." << endl;
 		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "", username.c_str());
 		  socket->send(&failed);
 		  return;
@@ -108,7 +106,6 @@ void Operations::sendFile(WrapperSocket *socket, string filePath){
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
-		  cout << "Failed to send: File " << filePath << " does not exist." << endl;
 		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "");
 		  socket->send(&failed);
 		  return;
@@ -146,7 +143,6 @@ void Operations::sendFile(WrapperSocket *socket, string filePath, string usernam
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
-		  cout << "Failed to send: File " << filePath << " does not exist." << endl;
 		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "", username.c_str());
 		  socket->send(&failed);
 		  return;
@@ -184,7 +180,6 @@ FileRecord Operations::sendFileClient(WrapperSocket *socket, string filePath, st
 	string filename = filePath.substr(filePath.find_last_of("/\\") + 1);
 	struct stat buffer;   
   	if(stat(filePath.c_str(), &buffer) != 0){
-		  cout << "Failed to send: File " << filePath << " does not exist." << endl;
 		  MessageData failed = make_packet(TYPE_NOTHING_TO_SEND, 1, 1, -1, "", username.c_str());
 		  socket->send(&failed);
 		  exit(-1);
@@ -279,13 +274,11 @@ void Operations::sendNothing(WrapperSocket * socket) {
 void Operations::sendDeleteFile(WrapperSocket * socket, string filename){
 	MessageData request = make_packet(TYPE_DELETE, 1, 1, -1, filename.c_str());
 	socket->send(&request);
-	cout << "Deleting " << filename << endl;
 }
 
 void Operations::sendDeleteFile(WrapperSocket * socket, string filename, string username){
 	MessageData request = make_packet(TYPE_DELETE, 1, 1, -1, filename.c_str(), username.c_str());
 	socket->send(&request);
-	cout << "Deleting " << filename << endl;
 }
 
 void Operations::sendDeleteAll(WrapperSocket * socket) {

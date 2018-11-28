@@ -127,10 +127,9 @@ MessageData* WrapperSocket::receive(int timeout) {
     fd.events = POLLIN;
     int ret = poll(&fd, 1, 2000);
     switch(ret) {
-      case -1: printf("Error\n");
+      case -1:
         return NULL;
       case 0: printf("Timeout\n");
-          cout << "Timeout na porta: " << this->getPortInt() << endl;
         return NULL;
       default: break;
     }
@@ -163,7 +162,6 @@ MessageData* WrapperSocket::receive(int timeout) {
       this->socketSeq = data->socketSeq + 1;
       break;
     }
-    cout << "Recebi errado na porta: " << this->getPortInt() << " tipo: " << data->type << " data: " << string(data->payload) << endl;
   }
 
   this->lastData = data;

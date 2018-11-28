@@ -36,21 +36,16 @@ Client::Client (string username, string serverAddr, int serverDistributorPort, s
 
 void Client::listenMaster() {
 	while(1) {
-		cout << "Esperando alguem trocar o mestre" << endl;
 		MessageData * data = this->listenToMaster->receive(TIMEOUT_OFF);
-		cout << "Trocando server Master" << endl;
 		if (data->type == TYPE_NEW_BOSS) {
 			
 			while(1) {
-				cout << "NEW BOSS " << string(data->payload) << endl;
 				WrapperSocket socketToGetPort(string(data->payload), 4000);
 				MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, this->localIp.length(), this->localIp.c_str(), this->username.c_str());
-				cout << "Pedindo nova Conexao" << endl;
 				socketToGetPort.send(&request);
-				cout << "Voltando da conexao" << endl;
 				MessageData *newPort = socketToGetPort.receive(TIMEOUT_ON, 1500);
 				if(newPort != NULL && newPort->type == TYPE_MAKE_CONNECTION){
-					cout << "Criando novo socket " << string(newPort->payload) << endl;
+				
 					socketMtx.lock();
 					this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
 					this->payload1 = string(data->payload);
@@ -65,7 +60,6 @@ void Client::listenMaster() {
 			}
 			
 		}
-		cout << "Server trocado com sucesso, eu acho :D" << endl;
 	}
 }
 
