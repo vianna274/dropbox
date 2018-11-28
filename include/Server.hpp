@@ -54,7 +54,8 @@ class Server : public Operations
     mutex electionMutex;
     mutex propagationMutex;
     mutex portsMutex;
-
+    mutex backupList;
+    mutex talkToPrimaryMtx;
     WrapperSocket connectClientSocket;
     WrapperSocket listenToServersSocket;
     WrapperSocket * talkToPrimary;
@@ -153,6 +154,7 @@ class Server : public Operations
     bool waitForCoordinator();
     void createNewPortBackup(WrapperSocket * socket);
     void removeFromBackup(vector<string> backups, string main);
+    void handleReceiveCoordinator(MessageData * res);
 };
 
 }
