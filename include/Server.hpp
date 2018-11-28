@@ -56,6 +56,7 @@ class Server : public Operations
     mutex portsMutex;
     mutex backupList;
     mutex talkToPrimaryMtx;
+
     WrapperSocket connectClientSocket;
     WrapperSocket listenToServersSocket;
     WrapperSocket * talkToPrimary;
@@ -138,22 +139,85 @@ class Server : public Operations
      * Sends the file's filerecord that's within the dirPath through the given socket
      */
     void sendFileRecord(WrapperSocket * socket, string filename, User * user);
+
+    /**
+     * Used to make a connection between a backup and the primary server
+     */
     void makeConnection();
+
+    /**
+     *  Runs on a separate thread to listen to propagations from the primary and election messages from others backups
+     */
     void listenToServers(WrapperSocket * socket);
     
+    /**
+     * The primary server propates a new device connection to backups
+     */
     void propagateConnection(string username, string userIp);
+
+    /**
+     * The new primary server sends a message to all front ends to let them know the ip of the new primary server
+     */
     void propagateNewBoss();
+
+    /**
+     * The primary server propagates the file to all backups
+     */
     void propagateFile(string filename, string username);
+
+    /**
+     * The primary server tells all backups to delete the file
+     */
     void propagateDelete(string filename, string username);
+
+    /**
+     * Used during election to send a message a ANSWER message on Bully Algorithm
+     */
     void answer(string ip);
+
+    /**
+     * The election winner informs all remaining backups and client devices that it is the new primary server
+     */
     void becomeMain();
+
+    /**
+     * Return the IP's of all servers which the ip is greater than this server's IP
+     */
     vector<string> getHighers();
+ 
+    /**
+     * The backup server starts the election
+     */
     void startElection(vector<string> highers);
+
+    /**
+     * Sends a ELECTION message to all servers with IP greater than this server's IP
+     */
     void sendHighersElection(vector<string> highers);
+
+    /**
+     * Wait for other backups answers after an ELECTION message
+     */
     bool waitForAnswer();
+
+    /**
+     * Wait for other backup to win the election
+     */
     bool waitForCoordinator();
+
+    /**
+     * Create a new thread and socket to listen to a backup server
+     */
     void createNewPortBackup(WrapperSocket * socket);
+
+    /**
+     * Remove from the backup list the primary server after he is killed
+     */
     void removeFromBackup(vector<string> backups, string main);
+
+    /**
+     * The backup connects to the new primary server
+     */
     void handleReceiveCoordinator(MessageData * res);
 };
 

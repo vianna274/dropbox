@@ -111,10 +111,26 @@ namespace Dropbox
              * Update filerecord on the list
              */
             void updateFileRecord(FileRecord newFile);
+            
+            /**
+             * Return the Client's socket
+             */
             Dropbox::WrapperSocket * getSocket() { return socket; }
+
+            /**
+             * Return full path of syncDir folder
+             */
             string getSyncDirPath() { return syncDirPath; }
+            
+            /**
+             * Mutex to synchronize update sending and keyboard commnands 
+             */
             void lockMutex() { this->mtx.lock(); };
             void unlockMutex() { this->mtx.unlock(); };
+
+            /**
+             * Keep listening on port 10000 for a primary server change
+             */          
             void listenMaster();
     };
 }
