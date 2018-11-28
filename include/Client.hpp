@@ -45,6 +45,7 @@ namespace Dropbox
             Dropbox::WrapperSocket *listenToMaster;
             string syncDirPath;
             mutex mtx;
+            mutex socketMtx;
             vector<FileRecord> fileRecords;
 
             /**

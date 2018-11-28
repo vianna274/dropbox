@@ -130,6 +130,7 @@ MessageData* WrapperSocket::receive(int timeout) {
       case -1: printf("Error\n");
         return NULL;
       case 0: printf("Timeout\n");
+          cout << "Timeout na porta: " << this->getPortInt() << endl;
         return NULL;
       default: break;
     }
@@ -160,8 +161,9 @@ MessageData* WrapperSocket::receive(int timeout) {
       MessageData message = make_packet(TYPE_ACK, data->seq, 1, -1, "");
       this->sendAck(&message);
       this->socketSeq = data->socketSeq + 1;
-      receivedCorrectly = true;
+      break;
     }
+    cout << "Recebi errado na porta: " << this->getPortInt() << " tipo: " << data->type << " data: " << string(data->payload) << endl;
   }
 
   this->lastData = data;

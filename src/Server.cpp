@@ -351,7 +351,7 @@ void Server::connectNewClient()
 {
 
     MessageData *d = connectClientSocket.receive(TIMEOUT_OFF);
-    
+    cout << "Recebi algo na porta: " << connectClientSocket.getPortInt() << " tipo: " << d->type << endl;
     if (d->type == TYPE_MAKE_CONNECTION) {
         string username(d->username);
         string userIp(d->payload);
@@ -578,7 +578,7 @@ void Server::updateClient(vector<FileRecord> serverFiles, vector<FileRecord> cli
 void Server::receiveAskUpdate(WrapperSocket * socket, User * user) {
     vector<FileRecord> clientFiles = this->receiveFileList(socket);
     this->updateClient(this->getFileList(user->getDirPath()), clientFiles, socket, user);
-    MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, -1, "request_update_done");
+    MessageData packet = make_packet(TYPE_REQUEST_UPDATE_DONE, 1, 1, sizeof("request_update_done"), "request_update_done");
 	socket->send(&packet);
 }
 

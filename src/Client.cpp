@@ -39,24 +39,31 @@ void Client::listenMaster() {
 		cout << "Esperando alguem trocar o mestre" << endl;
 		MessageData * data = this->listenToMaster->receive(TIMEOUT_OFF);
 		cout << "Trocando server Master" << endl;
-		// this->lockMutex();
 		if (data->type == TYPE_NEW_BOSS) {
-			cout << "NEW BOSS " << string(data->payload) << endl;
-			WrapperSocket socketToGetPort(string(data->payload), 4000);
-			MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, this->localIp.length(), this->localIp.c_str(), this->username.c_str());
-			socketToGetPort.send(&request);
-			MessageData *newPort = socketToGetPort.receive(TIMEOUT_OFF);
-			if(newPort->type == TYPE_MAKE_CONNECTION){
-				this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
-			} 
-			else if(newPort->type == TYPE_REJECT_TO_LISTEN) {
-				cout << newPort->payload << endl;
-				std::exit(1);
+			
+			while(1) {
+				cout << "NEW BOSS " << string(data->payload) << endl;
+				WrapperSocket socketToGetPort(string(data->payload), 4000);
+				MessageData request = make_packet(TYPE_MAKE_CONNECTION, 1, 1, this->localIp.length(), this->localIp.c_str(), this->username.c_str());
+				cout << "Pedindo nova Conexao" << endl;
+				socketToGetPort.send(&request);
+				cout << "Voltando da conexao" << endl;
+				MessageData *newPort = socketToGetPort.receive(TIMEOUT_ON, 1500);
+				if(newPort != NULL && newPort->type == TYPE_MAKE_CONNECTION){
+					cout << "Criando novo socket " << string(newPort->payload) << endl;
+					socketMtx.lock();
+					this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
+					socketMtx.unlock();
+					break;
+				} 
+				else if(newPort != NULL && newPort->type == TYPE_REJECT_TO_LISTEN) {
+					cout << newPort->payload << endl;
+					std::exit(1);
 				}
+			}
+			
 		}
-		// this->unlockMutex();
 		cout << "Server trocado com sucesso, eu acho :D" << endl;
-		this_thread::sleep_for(chrono::milliseconds(1000));
 	}
 }
 
@@ -113,12 +120,16 @@ Client::~Client(){
 
 void Client::askUpdate() {
 	MessageData request = make_packet(TYPE_REQUEST_UPDATE, 1 , 1, -1, "type_request_update", this->username.c_str());
+	socketMtx.lock();
 	bool ass = this->socket->send(&request);
+	socketMtx.unlock();
 	if (ass == false)
 		return;
 	this->sendFileList(this->socket, this->fileRecords);
 	while(1) {
+		socketMtx.lock();
 		MessageData * response = this->socket->receive(TIMEOUT_ON);
+		socketMtx.unlock();
 		FileRecord fileRecord;
 		if (response == NULL) return;
 		switch (response->type) {
@@ -127,20 +138,28 @@ void Client::askUpdate() {
 			case TYPE_REQUEST_UPDATE_DONE:
 				return;
 			case TYPE_DELETE:
+				socketMtx.lock();
 				this->deleteFile(this->getSyncDirPath() + string(response->payload));
+				socketMtx.unlock();
 				this->removeFileRecord(string(response->payload));
 				break;
 			case TYPE_SEND_FILE:
 				fileRecord = *((FileRecord *)response->payload);
+				socketMtx.lock();
 				this->receiveFile(this->socket, string(fileRecord.filename), 
 					this->getSyncDirPath());
+				socketMtx.unlock();
 				this->updateFileRecord(fileRecord);
 				break;
 			case TYPE_SEND_UPLOAD_ALL:
+				socketMtx.lock();
 				this->receiveUploadAll(this->socket, this->getSyncDirPath());
+				socketMtx.unlock();
 				break;
 			case TYPE_DELETE_ALL:
+				socketMtx.lock();
 				this->deleteAll(this->getFileList(this->getSyncDirPath()), this->getSyncDirPath());
+				socketMtx.unlock();
 				break;
 			default:
 				cout << "Received " + to_string(response->type) << endl;
@@ -188,18 +207,24 @@ void Client::eventsInotify(int* fd){
 				string path = syncDirPath + filename;
 				vector<FileRecord> tempFiles = this->getFileList(this->getSyncDirPath());
 				if(event->mask & IN_MOVED_TO){
+					socketMtx.lock();
 					FileRecord newRecord = this->sendFileClient(this->socket, path.c_str(), this->username);
+					socketMtx.unlock();
 					this->updateFileRecord(newRecord);
 				}
 			
 				if(event->mask & IN_MOVED_FROM || event->mask & IN_DELETE){
+					socketMtx.lock();
 					this->sendDeleteFile(this->socket, filename.c_str(), this->username);
+					socketMtx.unlock();
 					this->removeFileRecord(filename);
 				}  
 		
 				if(event->mask & IN_CLOSE_WRITE){
+					socketMtx.lock();
 					this->sendDeleteFile(this->socket, filename.c_str(), this->username);
 					FileRecord newRecord = this->sendFileClient(this->socket, path.c_str(), this->username);
+					socketMtx.unlock();
 					this->updateFileRecord(newRecord);
 				} 
 	
