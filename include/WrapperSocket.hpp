@@ -41,7 +41,7 @@ class WrapperSocket
     /*
     *    Send a packet
     */
-    bool send(MessageData *packet);
+    int send(MessageData *packet);
     bool send(MessageData *packet, int wait);
 
     /*

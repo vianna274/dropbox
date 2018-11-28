@@ -65,6 +65,8 @@ namespace Dropbox
             /**
              *  Send a TYPE_REQUEST_UPDATE packet for the server and deals with the response to syncronize the local dir with the server
              */
+			string payload1;
+			int payload2;
             void askUpdate();
 
             /**

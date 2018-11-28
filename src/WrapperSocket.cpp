@@ -76,7 +76,7 @@ bool WrapperSocket::waitAck(int seq, int wait) {
   return false;
 }
 
-bool WrapperSocket::send(MessageData *packet) {
+int WrapperSocket::send(MessageData *packet) {
   set_socketSeq(packet, this->socketSeq);
   int tries = 0;
   do{
@@ -84,14 +84,14 @@ bool WrapperSocket::send(MessageData *packet) {
     if (sendto(this->localSocketHandler, (void *)packet, PACKET_LEN, 0,(const struct sockaddr *) &(this->remoteSocketAddr),sizeof(struct sockaddr_in)) < 0) {
       fprintf(stderr, "Error on sending");
       cout << string(packet->payload) << packet->type << " " << string(packet->username) << endl;
-      exit(1);
+      return -1;
     }
   
   }while(!this->waitAck(packet->seq) && ++tries < TOTAL_TRIES);
   this->socketSeq++;
   
-  if(tries == TOTAL_TRIES) return false;
-  return true;
+  if(tries == TOTAL_TRIES) return 0;
+  return 1;
 }
 
 bool WrapperSocket::waitAck(int seq) {

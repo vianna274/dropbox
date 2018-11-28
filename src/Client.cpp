@@ -53,6 +53,8 @@ void Client::listenMaster() {
 					cout << "Criando novo socket " << string(newPort->payload) << endl;
 					socketMtx.lock();
 					this->socket = new WrapperSocket(string(data->payload), stoi(newPort->payload));
+					this->payload1 = string(data->payload);
+					this->payload2 = stoi(newPort->payload);
 					socketMtx.unlock();
 					break;
 				} 
@@ -123,7 +125,13 @@ void Client::askUpdate() {
 	socketMtx.lock();
 	bool ass = this->socket->send(&request);
 	socketMtx.unlock();
-	if (ass == false)
+	if (ass == -1) {
+		socketMtx.lock();
+		this->socket = new WrapperSocket(this->payload1, this->payload2);
+		socketMtx.unlock();
+		ass = this->socket->send(&request);
+	}
+	else if (ass == 0)
 		return;
 	this->sendFileList(this->socket, this->fileRecords);
 	while(1) {
