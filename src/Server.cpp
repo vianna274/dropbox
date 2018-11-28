@@ -192,6 +192,7 @@ void Server::handleReceiveCoordinator(MessageData * res) {
     this->ipMain = string(res->payload);
     talkToPrimaryMtx.lock();
     this->talkToPrimary = new WrapperSocket(ipMain, 9000);
+    synchronize();
     talkToPrimaryMtx.unlock();
     this->makeConnection();
     this->electionMutex.lock();
@@ -235,6 +236,7 @@ void Server::listenToServers(WrapperSocket * socket){
                 cout << "Criando novo Socket Ip: " << ipMain << " Port: " << string(data->payload) << endl;
                 talkToPrimaryMtx.lock();
                 this->talkToPrimary = new WrapperSocket(ipMain, stoi(data->payload));
+                synchronize();
                 talkToPrimaryMtx.unlock();
                 this->electionMutex.lock();
                 this->status = STATUS_NORMAL;
@@ -588,4 +590,8 @@ void Server::exitUser(WrapperSocket *socket, User *user){
     user->closeDeviceSession(socket);
     setPortAvailable(port);
     cout << "User " + user->getUsername() + " ended session on device on port " << port << endl;
+}
+
+void synchronize(){
+    this_thread::sleep_for(chrono::milliseconds(1000));
 }

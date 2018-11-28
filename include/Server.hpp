@@ -223,4 +223,5 @@ class Server : public Operations
 
 }
 
+void synchronize();
 #endif
